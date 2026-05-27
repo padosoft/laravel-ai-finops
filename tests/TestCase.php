@@ -37,5 +37,8 @@ abstract class TestCase extends Orchestra
             'database' => ':memory:',
             'prefix' => '',
         ]);
+
+        // Reach privileged endpoints without auth by default; AuthGateTest opts back in.
+        $app['config']->set('ai-finops.routes.auth_middleware', []);
     }
 }
