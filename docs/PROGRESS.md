@@ -5,7 +5,14 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
-### M3 — Enterprise governance (branch `feat/core-enterprise`) — IN PROGRESS
+### M3.4 — Multi-channel alerts (branch `feat/core-alerts`) — COMPLETE (pending PR→main, completes M3)
+- AlertChannel (config never serialized → has_config), AlertRule (budget threshold, last_notified_pct
+  de-dupe + re-arm), AlertLogEntry; AlertDispatcher (crossing fires once + logs + BudgetThresholdReached
+  event for host delivery); `ai-finops:check-alerts`; AlertController (channels/rules/log/test).
+- Local Copilot CLI auth dropped mid-session (`copilot /login` to restore) — relying on PR review.
+- Gates GREEN: PHPUnit **91/91**, Pint passed.
+
+### M3 (1/2) — Enterprise governance (branch `feat/core-enterprise`) — MERGED (PR #4)
 - **M3.1** Chargeback/showback: CostCenter model + cost-centers CRUD + allocation report (unallocated bucket).
 - **M3.2** Declarative policies (Policy DSL: scope+min_cost+model match → action), PolicyController CRUD/validate/simulate;
   approval workflow (SpendApproval + ApprovalController); PolicyEngine consults policies (Block & RequireApproval halt,
