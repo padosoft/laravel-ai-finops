@@ -14,10 +14,11 @@ use Laravel\Ai\Responses\EmbeddingsResponse;
 use Laravel\Ai\Responses\StreamedAgentResponse;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
-use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Data\TokenUsage;
 use Padosoft\LaravelAiFinOps\Enums\CallStatus;
 use Padosoft\LaravelAiFinOps\Enums\Modality;
+use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
+use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 
 /**
  * The single metering hook on the laravel/ai lifecycle. Listens to completion
@@ -31,6 +32,8 @@ class MeteringListener
         private readonly UsageRecorder $recorder,
         private readonly Config $config,
         private readonly Container $container,
+        private readonly PricingRegistry $pricing,
+        private readonly CostCalculator $calculator,
     ) {}
 
     /** Handles AgentPrompted and (via inheritance) AgentStreamed. */
@@ -89,6 +92,9 @@ class MeteringListener
     ): AiCallEnvelope {
         $currency = (string) $this->config->get('ai-finops.currency.base', 'USD');
 
+        $price = $this->pricing->priceFor($model, $provider);
+        $cost = $this->calculator->cost($tokens, $price, $currency);
+
         return new AiCallEnvelope(
             traceId: $traceId,
             provider: $provider,
@@ -96,8 +102,9 @@ class MeteringListener
             modality: $modality,
             status: CallStatus::Recorded,
             tokens: $tokens,
-            cost: CostBreakdown::zero($currency),
+            cost: $cost,
             tenantId: $this->resolveTenant(),
+            metadata: $price !== null ? ['price_source' => $price->source] : [],
         );
     }
 

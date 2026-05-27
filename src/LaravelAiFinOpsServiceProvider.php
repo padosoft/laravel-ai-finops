@@ -8,9 +8,12 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Events\AgentPrompted;
 use Laravel\Ai\Events\AgentStreamed;
 use Laravel\Ai\Events\EmbeddingsGenerated;
+use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
+use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
+use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -21,6 +24,8 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(self::CONFIG_PATH, 'ai-finops');
 
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
+        $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
+        $this->app->singleton(PricingRegistry::class);
     }
 
     public function boot(): void

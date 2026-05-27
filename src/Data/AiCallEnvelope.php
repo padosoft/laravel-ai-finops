@@ -95,7 +95,9 @@ final readonly class AiCallEnvelope
             'cost_total' => $this->cost->total,
             'currency' => $this->cost->currency,
             'latency_ms' => $this->latencyMs,
-            'metadata' => $this->metadata === [] ? null : json_encode($this->metadata),
+            // Returned as a raw array; the UsageRecord model's `array` cast encodes
+            // it on write (encoding here too would double-encode the JSON).
+            'metadata' => $this->metadata === [] ? null : $this->metadata,
         ];
     }
 
