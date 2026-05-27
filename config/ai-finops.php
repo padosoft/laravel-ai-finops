@@ -118,6 +118,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Audit trail
+    |--------------------------------------------------------------------------
+    | Records created/updated/deleted events for governance models (budgets,
+    | policies, kill-switches, cost-centers, approvals, pricing overrides).
+    */
+    'audit' => [
+        'enabled' => env('AI_FINOPS_AUDIT', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feature toggles (enterprise + WOW)
     |--------------------------------------------------------------------------
     */

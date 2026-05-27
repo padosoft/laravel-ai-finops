@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ApprovalController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\AuditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
@@ -83,6 +84,9 @@ Route::group([
         Route::put('cost-centers/{id}', [ChargebackController::class, 'update'])->whereNumber('id')->name('ai-finops.cost-centers.update');
         Route::delete('cost-centers/{id}', [ChargebackController::class, 'destroy'])->whereNumber('id')->name('ai-finops.cost-centers.destroy');
         Route::get('chargeback/report', [ChargebackController::class, 'report'])->name('ai-finops.chargeback.report');
+
+        // Audit trail
+        Route::get('audit', [AuditController::class, 'index'])->name('ai-finops.audit.index');
 
         // Settings / kill-switch / diagnostics
         Route::get('settings', [SettingsController::class, 'index'])->name('ai-finops.settings.index');
