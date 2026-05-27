@@ -45,3 +45,23 @@ Copilot review comments). **Load this before working and pass it to every subage
   other contributors/CI (Copilot flagged 4× on PR #1). Reference `docs/PLAN.md` + note the local copy.
 - **CI: PHP 8.5 passed too** on `shivammathur/setup-php@v2` — the experimental (non-blocking) 8.5 job
   was green for the M0 scaffold.
+- **`AgentStreamed extends AgentPrompted` in laravel/ai** — safe to register `AgentStreamed` events
+  against `handleAgentPrompted(AgentPrompted $event)` because of inheritance. No separate handler needed.
+  Worth a regression test if the inheritance ever changes.
+- **`$collection->first()->property ?? fallback` is safe in PHP** — the `??` operator uses `isset`-style
+  semantics and handles `null` object property access without throwing. No `?->` required (though `?->`
+  is clearer and preferred for explicit intent).
+- **Do not use `currency.display` label on aggregated totals when no FX conversion is in place** —
+  KPI endpoints that SUM stored amounts must report in the stored base currency (`currency.base`).
+  Using the `display` currency label on unconverted amounts will silently return mislabeled figures.
+  FX conversion belongs to a future M (store amounts in `base`; convert on read when `fx_provider` is set).
+- **`sync()` MUST guard `synced_at` cache update** — only update the "last synced" cache key and return
+  `synced: true` when the pricing source actually returned > 0 models. Returning `synced: true` on a
+  failed/empty sync gives a false operational state and causes operators to believe pricing is current
+  when it may be stale/empty.
+- **Validate `nullable|date` before calling `$request->date()`** — `$request->date('param')` throws
+  `\Carbon\Exceptions\InvalidFormatException` (uncaught 500) on invalid input. Always validate date
+  parameters with `$request->validate(['param' => 'nullable|date'])` before calling `date()`.
+- **`updateOrCreate` + `wasRecentlyCreated` for correct 201/200** — when a route uses
+  `Model::updateOrCreate`, the response code should reflect whether a record was created (201) or
+  updated (200). Use `$model->wasRecentlyCreated ? 201 : 200`.

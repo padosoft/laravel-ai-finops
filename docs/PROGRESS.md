@@ -5,6 +5,17 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
+### M1 — Metering foundation (branch `feat/core-metering`) — COMPLETE (pending macro PR→main)
+- **M1.1** Assessment: backbone `laravel/ai` confirmed; `agentic-qa-kit` is Bun/TS (external QA runner). Recorded in LESSON.
+- **M1.2** `AiCallEnvelope` + `TokenUsage`/`CostBreakdown` + enums; immutable `ai_finops_usage_ledger` + `UsageRecord`.
+- **M1.3** Single metering hook (`MeteringListener`) on `laravel/ai` events (AgentPrompted/AgentStreamed/EmbeddingsGenerated); `UsageRecorder`/`DatabaseUsageRecorder`; tenant resolver; class_exists-guarded registration.
+- **M1.4** `PricingRegistry` (LiteLLM base ⊕ Padosoft override wins) + `LiteLLMPricingSource` + `CostCalculator`; wired into the hook (real cost + price_source).
+- **M1.5** API: Usage (`index`/`show`/`trace`) + Pricing (`models`/`sync`/`sync/status`/overrides CRUD). Privileged routes gated by `auth_middleware`; public `health`.
+- **M1.6** API: Dashboard (`kpis`/`spend-trend`/`top-models`/`top-tenants`).
+- **M1-review** Copilot `/review` applied 4 fixes: (1) `kpis()` currency label was `display` (no FX in M1) → changed to `base`; (2) `sync()` updated `synced_at` even on failure → only on success; (3) `spendTrend()`/`index()` `$request->date()` could 500 on invalid input → validate first; (4) `storeOverride()` always returned 201 → uses `wasRecentlyCreated`.
+- Gates GREEN locally: PHPUnit **40/40**, Pint passed, hermetic (no network). Next: macro PR `feat/core-metering`→main with Copilot loop.
+
+
 ### M0 — Governance bootstrap & scaffolding (branch `chore/governance-bootstrap`) — IN PROGRESS
 - Created branch `chore/governance-bootstrap` off `main`.
 - **M0.1** Added governance docs adapted from `../product_image_discovery_admin`:
