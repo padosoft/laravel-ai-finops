@@ -11,6 +11,7 @@ use Laravel\Ai\Events\EmbeddingsGenerated;
 use Laravel\Ai\Events\GeneratingEmbeddings;
 use Laravel\Ai\Events\PromptingAgent;
 use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
+use Padosoft\LaravelAiFinOps\Console\CapturePricesCommand;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
@@ -87,6 +88,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
                 ReportCommand::class,
                 PruneLedgerCommand::class,
                 CheckAlertsCommand::class,
+                CapturePricesCommand::class,
             ]);
         }
 

@@ -14,6 +14,7 @@ use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\FootprintController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ForecastController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PolicyController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\PriceWatchController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\RoutingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
@@ -123,6 +124,13 @@ Route::group([
         Route::delete('credits/pools/{id}', [CreditController::class, 'destroy'])->whereNumber('id')->name('ai-finops.credits.destroy');
         Route::post('credits/pools/{id}/topup', [CreditController::class, 'topup'])->whereNumber('id')->name('ai-finops.credits.topup');
         Route::get('credits/pools/{id}/ledger', [CreditController::class, 'ledger'])->whereNumber('id')->name('ai-finops.credits.ledger');
+
+        // Provider price-change watcher
+        Route::get('price-watch/changes', [PriceWatchController::class, 'changes'])->name('ai-finops.price-watch.changes');
+        Route::post('price-watch/capture', [PriceWatchController::class, 'capture'])->name('ai-finops.price-watch.capture');
+        Route::get('price-watch/subscriptions', [PriceWatchController::class, 'subscriptions'])->name('ai-finops.price-watch.subscriptions.index');
+        Route::post('price-watch/subscriptions', [PriceWatchController::class, 'subscribe'])->name('ai-finops.price-watch.subscriptions.store');
+        Route::delete('price-watch/subscriptions/{id}', [PriceWatchController::class, 'unsubscribe'])->whereNumber('id')->name('ai-finops.price-watch.subscriptions.destroy');
 
         // FinOps copilot
         Route::post('copilot/query', [CopilotController::class, 'query'])->name('ai-finops.copilot.query');
