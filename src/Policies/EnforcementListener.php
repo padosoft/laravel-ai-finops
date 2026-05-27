@@ -50,7 +50,9 @@ class EnforcementListener
     {
         $decision = $this->engine->evaluate($envelope);
 
-        if ($decision->blocked()) {
+        // Block and RequireApproval halt the call; Downgrade/Throttle/Queue are advisory
+        // (surfaced via diagnostics/estimate; auto-application is a pipeline follow-up).
+        if ($decision->halts()) {
             throw new BudgetExceededException($decision->reason, $decision->budgetId);
         }
     }

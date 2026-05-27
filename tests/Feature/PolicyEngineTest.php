@@ -12,6 +12,8 @@ use Padosoft\LaravelAiFinOps\Enums\PolicyAction;
 use Padosoft\LaravelAiFinOps\Exceptions\BudgetExceededException;
 use Padosoft\LaravelAiFinOps\Models\Budget;
 use Padosoft\LaravelAiFinOps\Models\KillSwitch;
+use Padosoft\LaravelAiFinOps\Models\Policy;
+use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Models\UsageRecord;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Policies\PolicyEngine;
@@ -106,6 +108,53 @@ class PolicyEngineTest extends TestCase
 
         config(['ai-finops.kill_switch' => true]);
         $this->assertTrue($this->engine()->evaluate($this->envelope())->blocked());
+    }
+
+    public function test_policy_require_approval_creates_pending_and_halts(): void
+    {
+        Policy::create([
+            'name' => 'Legal needs approval', 'scope_type' => 'global',
+            'min_cost' => 1.0, 'action' => 'require_approval', 'priority' => 10,
+        ]);
+
+        $envelope = new AiCallEnvelope(
+            traceId: 't', provider: 'openai', model: 'gpt-5.1',
+            cost: new CostBreakdown(total: 5.0, currency: 'USD'),
+        );
+
+        $decision = $this->engine()->evaluate($envelope);
+
+        $this->assertTrue($decision->requiresApproval());
+        $this->assertTrue($decision->halts());
+        $this->assertNotNull($decision->approvalId);
+        $this->assertSame('pending', SpendApproval::query()->findOrFail($decision->approvalId)->status);
+    }
+
+    public function test_policy_below_min_cost_does_not_match(): void
+    {
+        Policy::create([
+            'name' => 'Expensive only', 'scope_type' => 'global',
+            'min_cost' => 10.0, 'action' => 'block',
+        ]);
+
+        $cheap = new AiCallEnvelope(traceId: 't', provider: 'openai', model: 'gpt-5.1', cost: new CostBreakdown(total: 0.5, currency: 'USD'));
+
+        $this->assertFalse($this->engine()->evaluate($cheap)->blocked());
+    }
+
+    public function test_policy_downgrade_is_advisory_not_halting(): void
+    {
+        Policy::create([
+            'name' => 'Cheap tier downgrade', 'scope_type' => 'tenant', 'scope_id' => 'free',
+            'action' => 'downgrade', 'action_param' => 'gpt-5.1-mini',
+        ]);
+
+        $envelope = new AiCallEnvelope(traceId: 't', provider: 'openai', model: 'gpt-5.1', tenantId: 'free');
+
+        $decision = $this->engine()->evaluate($envelope);
+
+        $this->assertFalse($decision->halts());
+        $this->assertSame('gpt-5.1-mini', $decision->suggestedModel);
     }
 
     public function test_enforcement_listener_throws_402_when_blocked(): void

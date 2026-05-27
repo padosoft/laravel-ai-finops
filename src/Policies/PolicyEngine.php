@@ -9,14 +9,19 @@ use Illuminate\Database\QueryException;
 use Padosoft\LaravelAiFinOps\Budgets\BudgetResolver;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\PolicyDecision;
+use Padosoft\LaravelAiFinOps\Enums\PolicyAction;
 use Padosoft\LaravelAiFinOps\Models\KillSwitch;
+use Padosoft\LaravelAiFinOps\Models\Policy;
+use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 
 /**
- * Decides whether a call may proceed. M2 logic, in order:
+ * Decides whether a call may proceed, in order:
  *   1. global kill switch (config or stored)
  *   2. scoped kill switch (provider/tenant)
- *   3. hard budget already exceeded (when enforcement enabled)
- * Advanced policy actions (throttle/downgrade/queue/approval) arrive in M3.
+ *   3. hard budget exceeded / would-exceed (when enforcement enabled)
+ *   4. declarative policies (block/require_approval/downgrade/throttle/queue)
+ * Block and RequireApproval halt the call (enforced); Downgrade/Throttle/Queue are
+ * surfaced as advisory decisions (auto-application is a pipeline follow-up).
  */
 class PolicyEngine
 {
@@ -57,7 +62,54 @@ class PolicyEngine
             }
         }
 
+        if (($policyDecision = $this->evaluatePolicies($envelope)) !== null) {
+            return $policyDecision;
+        }
+
         return PolicyDecision::allow();
+    }
+
+    private function evaluatePolicies(AiCallEnvelope $envelope): ?PolicyDecision
+    {
+        try {
+            $policies = Policy::query()->where('enabled', true)->orderBy('priority')->orderBy('id')->get();
+        } catch (QueryException) {
+            return null;
+        }
+
+        foreach ($policies as $policy) {
+            if (! $policy->matches($envelope)) {
+                continue;
+            }
+
+            return match ($policy->action()) {
+                PolicyAction::Allow => PolicyDecision::allow("policy: {$policy->name}"),
+                PolicyAction::Block => PolicyDecision::block("policy: {$policy->name}", policyId: (int) $policy->id),
+                PolicyAction::Downgrade => PolicyDecision::downgrade((string) $policy->action_param, "policy: {$policy->name}", (int) $policy->id),
+                PolicyAction::Throttle => PolicyDecision::throttle("policy: {$policy->name}", (int) $policy->id),
+                PolicyAction::Queue => PolicyDecision::queue("policy: {$policy->name}", (int) $policy->id),
+                PolicyAction::RequireApproval => $this->requireApproval($policy, $envelope),
+            };
+        }
+
+        return null;
+    }
+
+    private function requireApproval(Policy $policy, AiCallEnvelope $envelope): PolicyDecision
+    {
+        $approval = SpendApproval::create([
+            'provider' => $envelope->provider,
+            'model' => $envelope->model,
+            'tenant_id' => $envelope->tenantId !== null ? (string) $envelope->tenantId : null,
+            'cost_center' => $envelope->costCenter,
+            'estimated_cost' => $envelope->cost->total,
+            'currency' => $envelope->cost->currency,
+            'status' => 'pending',
+            'policy_id' => $policy->id,
+            'reason' => "policy: {$policy->name}",
+        ]);
+
+        return PolicyDecision::requireApproval("approval required (policy: {$policy->name})", (int) $approval->id, (int) $policy->id);
     }
 
     private function killSwitchReason(AiCallEnvelope $envelope): ?string

@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Padosoft\LaravelAiFinOps\Http\Controllers\ApprovalController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\PolicyController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\UsageController;
@@ -59,6 +61,21 @@ Route::group([
         Route::get('dashboard/spend-trend', [DashboardController::class, 'spendTrend'])->name('ai-finops.dashboard.spend-trend');
         Route::get('dashboard/top-models', [DashboardController::class, 'topModels'])->name('ai-finops.dashboard.top-models');
         Route::get('dashboard/top-tenants', [DashboardController::class, 'topTenants'])->name('ai-finops.dashboard.top-tenants');
+
+        // Policies (declarative)
+        Route::get('policies', [PolicyController::class, 'index'])->name('ai-finops.policies.index');
+        Route::post('policies', [PolicyController::class, 'store'])->name('ai-finops.policies.store');
+        Route::post('policies/validate', [PolicyController::class, 'validatePayload'])->name('ai-finops.policies.validate');
+        Route::get('policies/{id}', [PolicyController::class, 'show'])->whereNumber('id')->name('ai-finops.policies.show');
+        Route::put('policies/{id}', [PolicyController::class, 'update'])->whereNumber('id')->name('ai-finops.policies.update');
+        Route::delete('policies/{id}', [PolicyController::class, 'destroy'])->whereNumber('id')->name('ai-finops.policies.destroy');
+        Route::post('policies/{id}/simulate', [PolicyController::class, 'simulate'])->whereNumber('id')->name('ai-finops.policies.simulate');
+
+        // Approvals
+        Route::get('approvals', [ApprovalController::class, 'index'])->name('ai-finops.approvals.index');
+        Route::get('approvals/{id}', [ApprovalController::class, 'show'])->whereNumber('id')->name('ai-finops.approvals.show');
+        Route::post('approvals/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id')->name('ai-finops.approvals.approve');
+        Route::post('approvals/{id}/reject', [ApprovalController::class, 'reject'])->whereNumber('id')->name('ai-finops.approvals.reject');
 
         // Chargeback / showback
         Route::get('cost-centers', [ChargebackController::class, 'index'])->name('ai-finops.cost-centers.index');
