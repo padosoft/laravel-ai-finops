@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Scoped emergency stop. An active row blocks matching calls regardless of budget.
- * scope_type: global|provider|tenant|feature.
+ * scope_type: global|provider|tenant. ('feature' is reserved for M3.)
  *
  * @property string $scope_type
  * @property string|null $scope_id
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class KillSwitch extends Model
 {
-    protected $guarded = [];
+    protected $fillable = ['scope_type', 'scope_id', 'active', 'reason'];
 
     protected $casts = [
         'active' => 'bool',

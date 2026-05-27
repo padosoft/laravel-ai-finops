@@ -23,7 +23,8 @@ class ReportCommand extends Command
 
         $calls = (clone $base)->count();
         $cost = round((float) (clone $base)->sum('cost_total'), 6);
-        $currency = (string) config('ai-finops.currency.display', config('ai-finops.currency.base', 'USD'));
+        // Use base currency — totals are stored in base; display currency has no FX conversion yet.
+        $currency = (string) config('ai-finops.currency.base', 'USD');
 
         $this->info("AI FinOps report — last {$days} day(s)");
         $this->line("Calls: {$calls}");

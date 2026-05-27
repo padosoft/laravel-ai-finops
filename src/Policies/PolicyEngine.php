@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Padosoft\LaravelAiFinOps\Policies;
 
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Database\QueryException;
 use Padosoft\LaravelAiFinOps\Budgets\BudgetResolver;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\PolicyDecision;
 use Padosoft\LaravelAiFinOps\Models\KillSwitch;
-use Throwable;
 
 /**
  * Decides whether a call may proceed. M2 logic, in order:
@@ -53,7 +53,7 @@ class PolicyEngine
     {
         try {
             $switches = KillSwitch::query()->where('active', true)->get();
-        } catch (Throwable) {
+        } catch (QueryException) {
             return null;
         }
 

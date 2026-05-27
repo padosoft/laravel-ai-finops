@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps\Budgets;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Enums\BudgetScope;
 use Padosoft\LaravelAiFinOps\Models\Budget;
-use Throwable;
 
 /**
  * Finds the budgets that apply to a given call and evaluates their consumption.
@@ -26,7 +26,7 @@ class BudgetResolver
     {
         try {
             $budgets = Budget::query()->where('enabled', true)->get();
-        } catch (Throwable) {
+        } catch (QueryException) {
             return collect();
         }
 

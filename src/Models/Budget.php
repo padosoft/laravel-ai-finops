@@ -26,7 +26,11 @@ use Padosoft\LaravelAiFinOps\Enums\BudgetScope;
  */
 class Budget extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'name', 'parent_id', 'scope_type', 'scope_id',
+        'limit_amount', 'currency', 'period', 'rolling_days',
+        'soft_limit_pct', 'hard', 'enabled',
+    ];
 
     protected $casts = [
         'limit_amount' => 'float',

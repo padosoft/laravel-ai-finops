@@ -21,6 +21,8 @@ class BudgetExceededException extends HttpException
     ) {
         $status = (int) config('ai-finops.block_status', 402);
 
-        parent::__construct($status, $blockReason, $previous, [], 0);
+        // Use a generic HTTP message to avoid leaking budget names or tenant IDs to callers.
+        // The detailed reason is available via $this->blockReason for internal logging.
+        parent::__construct($status, 'AI spend limit reached', $previous, [], 0);
     }
 }

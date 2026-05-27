@@ -44,14 +44,21 @@ class SettingsController
     public function setKillSwitch(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'scope_type' => ['required', Rule::in(['global', 'provider', 'tenant', 'feature'])],
-            'scope_id' => ['nullable', 'string', 'max:128'],
+            'scope_type' => ['required', Rule::in(['global', 'provider', 'tenant'])],
+            // scope_id is required for scoped types; must be absent for global.
+            'scope_id' => [
+                Rule::requiredIf(fn () => in_array($request->input('scope_type'), ['provider', 'tenant'], true)),
+                'nullable', 'string', 'max:128',
+            ],
             'active' => ['required', 'boolean'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
+        // Normalise global scope_id to null for a stable unique-key lookup.
+        $data['scope_id'] = $data['scope_type'] === 'global' ? null : ($data['scope_id'] ?? null);
+
         $switch = KillSwitch::updateOrCreate(
-            ['scope_type' => $data['scope_type'], 'scope_id' => $data['scope_id'] ?? null],
+            ['scope_type' => $data['scope_type'], 'scope_id' => $data['scope_id']],
             ['active' => $data['active'], 'reason' => $data['reason'] ?? null],
         );
 
