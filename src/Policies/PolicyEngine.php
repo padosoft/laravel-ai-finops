@@ -7,6 +7,7 @@ namespace Padosoft\LaravelAiFinOps\Policies;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\QueryException;
 use Padosoft\LaravelAiFinOps\Budgets\BudgetResolver;
+use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\PolicyDecision;
 use Padosoft\LaravelAiFinOps\Enums\PolicyAction;
@@ -18,8 +19,9 @@ use Padosoft\LaravelAiFinOps\Models\SpendApproval;
  * Decides whether a call may proceed, in order:
  *   1. global kill switch (config or stored)
  *   2. scoped kill switch (provider/tenant)
- *   3. hard budget exceeded / would-exceed (when enforcement enabled)
- *   4. declarative policies (block/require_approval/downgrade/throttle/queue)
+ *   3. guardrail violation (when guardrail-linked spend is enabled)
+ *   4. hard budget exceeded / would-exceed (when enforcement enabled)
+ *   5. declarative policies (block/require_approval/downgrade/throttle/queue)
  * Block and RequireApproval halt the call (enforced); Downgrade/Throttle/Queue are
  * surfaced as advisory decisions (auto-application is a pipeline follow-up).
  */
@@ -28,6 +30,7 @@ class PolicyEngine
     public function __construct(
         private readonly Config $config,
         private readonly BudgetResolver $budgets,
+        private readonly GuardrailProvider $guardrail,
     ) {}
 
     public function evaluate(AiCallEnvelope $envelope): PolicyDecision
@@ -38,6 +41,11 @@ class PolicyEngine
 
         if (($killReason = $this->killSwitchReason($envelope)) !== null) {
             return PolicyDecision::block($killReason);
+        }
+
+        if ($this->config->get('ai-finops.features.guardrail_linked_spend', false)
+            && ($violation = $this->guardrail->violation($envelope)) !== null) {
+            return PolicyDecision::block("guardrail violation: {$violation}");
         }
 
         $enforce = (bool) $this->config->get('ai-finops.enforcement', true);

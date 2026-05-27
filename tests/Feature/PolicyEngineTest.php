@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Padosoft\LaravelAiFinOps\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Data\TokenUsage;
@@ -171,6 +172,39 @@ class PolicyEngineTest extends TestCase
         // The block policy is skipped (observability mode); the advisory downgrade is surfaced.
         $this->assertFalse($decision->halts());
         $this->assertSame('gpt-5.1-mini', $decision->suggestedModel);
+    }
+
+    public function test_guardrail_violation_blocks_when_feature_enabled(): void
+    {
+        config(['ai-finops.features.guardrail_linked_spend' => true]);
+
+        $this->app->singleton(GuardrailProvider::class, fn () => new class implements GuardrailProvider
+        {
+            public function violation(AiCallEnvelope $envelope): ?string
+            {
+                return 'unredacted PII';
+            }
+        });
+
+        $decision = $this->engine()->evaluate($this->envelope());
+
+        $this->assertTrue($decision->blocked());
+        $this->assertStringContainsString('guardrail', $decision->reason);
+    }
+
+    public function test_guardrail_ignored_when_feature_disabled(): void
+    {
+        config(['ai-finops.features.guardrail_linked_spend' => false]);
+
+        $this->app->singleton(GuardrailProvider::class, fn () => new class implements GuardrailProvider
+        {
+            public function violation(AiCallEnvelope $envelope): ?string
+            {
+                return 'unredacted PII';
+            }
+        });
+
+        $this->assertFalse($this->engine()->evaluate($this->envelope())->blocked());
     }
 
     public function test_enforcement_listener_throws_402_when_blocked(): void

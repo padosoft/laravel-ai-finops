@@ -8,6 +8,8 @@ use Padosoft\LaravelAiFinOps\Http\Controllers\ApprovalController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\AuditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\CopilotController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\CreditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\FootprintController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ForecastController;
@@ -113,6 +115,18 @@ Route::group([
         // CO2 / ESG footprint
         Route::get('footprint/summary', [FootprintController::class, 'summary'])->name('ai-finops.footprint.summary');
         Route::get('footprint/trend', [FootprintController::class, 'trend'])->name('ai-finops.footprint.trend');
+
+        // Credit pools
+        Route::get('credits/pools', [CreditController::class, 'index'])->name('ai-finops.credits.index');
+        Route::post('credits/pools', [CreditController::class, 'store'])->name('ai-finops.credits.store');
+        Route::put('credits/pools/{id}', [CreditController::class, 'update'])->whereNumber('id')->name('ai-finops.credits.update');
+        Route::delete('credits/pools/{id}', [CreditController::class, 'destroy'])->whereNumber('id')->name('ai-finops.credits.destroy');
+        Route::post('credits/pools/{id}/topup', [CreditController::class, 'topup'])->whereNumber('id')->name('ai-finops.credits.topup');
+        Route::get('credits/pools/{id}/ledger', [CreditController::class, 'ledger'])->whereNumber('id')->name('ai-finops.credits.ledger');
+
+        // FinOps copilot
+        Route::post('copilot/query', [CopilotController::class, 'query'])->name('ai-finops.copilot.query');
+        Route::get('copilot/history', [CopilotController::class, 'history'])->name('ai-finops.copilot.history');
 
         // Alerts
         Route::get('alerts/channels', [AlertController::class, 'channels'])->name('ai-finops.alerts.channels.index');

@@ -14,9 +14,13 @@ use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
+use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
+use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
+use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
+use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
 use Padosoft\LaravelAiFinOps\Models\Budget;
@@ -46,6 +50,18 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->app->singleton(
             QualityScoreProvider::class,
             NullQualityScoreProvider::class,
+        );
+
+        // Seam for pii-redactor / ai-act-compliance guardrails (toggle gated).
+        $this->app->singleton(
+            GuardrailProvider::class,
+            NullGuardrailProvider::class,
+        );
+
+        // Seam for the FinOps copilot (laravel-ai-chat / AskMyDocs).
+        $this->app->singleton(
+            CopilotProvider::class,
+            NullCopilotProvider::class,
         );
     }
 

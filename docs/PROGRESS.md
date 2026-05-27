@@ -5,7 +5,16 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
-### M3.4 — Multi-channel alerts (branch `feat/core-alerts`) — COMPLETE (pending PR→main, completes M3)
+### M4 — WOW features (branch `feat/core-wow`) — 8/9 (pending PR→main)
+- M4.1 Forecaster (run-rate) + AnomalyDetector + ack. M4.2 cost-aware routing (QualityScoreProvider seam →
+  eval-harness; RoutingEngine; rules + simulate). M4.3 what-if (replay re-priced; scenarios).
+  M4.4 StreamMeter (live cost + mid-stream cutoff). M4.6 credit pools (CRUD/topup/ledger).
+  M4.7 CO₂/ESG footprint. M4.8 guardrail-linked spend (GuardrailProvider seam → pii-redactor/ai-act).
+  M4.9 FinOps copilot (CopilotProvider seam → ai-chat/AskMyDocs; query+history).
+- All external integrations = Option-1 seams (contracts + toggles, no hard dep), tested with fakes.
+- **M4.5 price-change watcher = REMAINING** (small follow-up PR). Gates GREEN: PHPUnit **111/111**, Pint ok.
+
+### M3.4 — Multi-channel alerts (branch `feat/core-alerts`) — MERGED (PR #5)
 - AlertChannel (config never serialized → has_config), AlertRule (budget threshold, last_notified_pct
   de-dupe + re-arm), AlertLogEntry; AlertDispatcher (crossing fires once + logs + BudgetThresholdReached
   event for host delivery); `ai-finops:check-alerts`; AlertController (channels/rules/log/test).
