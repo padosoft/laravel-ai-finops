@@ -54,7 +54,11 @@ class PriceWatchService
         foreach (PriceWatchSubscription::query()->get() as $sub) {
             $snaps = PriceSnapshot::query()
                 ->where('model', $sub->model)
-                ->when($sub->provider !== null, fn ($q) => $q->where('provider', $sub->provider))
+                ->when(
+                    $sub->provider !== null,
+                    fn ($q) => $q->where('provider', $sub->provider),
+                    fn ($q) => $q->whereNull('provider'),
+                )
                 ->orderByDesc('captured_at')
                 ->orderByDesc('id')
                 ->limit(2)
