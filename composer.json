@@ -1,0 +1,78 @@
+{
+    "name": "padosoft/laravel-ai-finops",
+    "description": "Enterprise AI spend-governance for Laravel: cross-provider metering, budgets, policy enforcement, chargeback, forecasting, cost-aware routing and FinOps — the governance brick for AI agents. Hooks the official laravel/ai SDK at a single point.",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": [
+        "laravel",
+        "ai",
+        "finops",
+        "cost",
+        "budget",
+        "spend",
+        "governance",
+        "llm",
+        "tokens",
+        "pricing",
+        "chargeback",
+        "agents",
+        "laravel-ai"
+    ],
+    "authors": [
+        {
+            "name": "Lorenzo Padovani",
+            "email": "lorenzo.padovani@padosoft.com",
+            "homepage": "https://github.com/padosoft"
+        }
+    ],
+    "homepage": "https://github.com/padosoft/laravel-ai-finops",
+    "support": {
+        "issues": "https://github.com/padosoft/laravel-ai-finops/issues",
+        "source": "https://github.com/padosoft/laravel-ai-finops"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "illuminate/contracts": "^12.0 || ^13.0",
+        "illuminate/console": "^12.0 || ^13.0",
+        "illuminate/database": "^12.0 || ^13.0",
+        "illuminate/http": "^12.0 || ^13.0",
+        "illuminate/queue": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "laravel/ai": "^0.6.8 || ^0.7",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.0 || ^12.0",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6"
+    },
+    "suggest": {
+        "laravel/ai": "Required to meter real AI calls via the laravel/ai request/response lifecycle (^0.6.8 || ^0.7)."
+    },
+    "autoload": {
+        "psr-4": {
+            "Padosoft\\LaravelAiFinOps\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Padosoft\\LaravelAiFinOps\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Padosoft\\LaravelAiFinOps\\LaravelAiFinOpsServiceProvider"
+            ]
+        },
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
