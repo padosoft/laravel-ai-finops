@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
@@ -58,6 +59,13 @@ Route::group([
         Route::get('dashboard/spend-trend', [DashboardController::class, 'spendTrend'])->name('ai-finops.dashboard.spend-trend');
         Route::get('dashboard/top-models', [DashboardController::class, 'topModels'])->name('ai-finops.dashboard.top-models');
         Route::get('dashboard/top-tenants', [DashboardController::class, 'topTenants'])->name('ai-finops.dashboard.top-tenants');
+
+        // Chargeback / showback
+        Route::get('cost-centers', [ChargebackController::class, 'index'])->name('ai-finops.cost-centers.index');
+        Route::post('cost-centers', [ChargebackController::class, 'store'])->name('ai-finops.cost-centers.store');
+        Route::put('cost-centers/{id}', [ChargebackController::class, 'update'])->whereNumber('id')->name('ai-finops.cost-centers.update');
+        Route::delete('cost-centers/{id}', [ChargebackController::class, 'destroy'])->whereNumber('id')->name('ai-finops.cost-centers.destroy');
+        Route::get('chargeback/report', [ChargebackController::class, 'report'])->name('ai-finops.chargeback.report');
 
         // Settings / kill-switch / diagnostics
         Route::get('settings', [SettingsController::class, 'index'])->name('ai-finops.settings.index');
