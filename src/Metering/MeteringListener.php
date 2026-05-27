@@ -19,6 +19,7 @@ use Padosoft\LaravelAiFinOps\Enums\Modality;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Support\TenantResolver;
+use Padosoft\LaravelAiFinOps\Support\TraceContext;
 
 /**
  * The single metering hook on the laravel/ai lifecycle. Listens to completion
@@ -34,6 +35,7 @@ class MeteringListener
         private readonly PricingRegistry $pricing,
         private readonly CostCalculator $calculator,
         private readonly TenantResolver $tenants,
+        private readonly TraceContext $trace,
     ) {}
 
     /** Handles AgentPrompted and (via inheritance) AgentStreamed. */
@@ -96,14 +98,19 @@ class MeteringListener
         $cost = $this->calculator->cost($tokens, $price, $currency);
 
         return new AiCallEnvelope(
-            traceId: $traceId,
+            // Ambient TraceContext (e.g. set by laravel-flow per step) overrides the
+            // provider invocation id and adds agentic attribution when present.
+            traceId: $this->trace->traceId() ?? $traceId,
             provider: $provider,
             model: $model,
             modality: $modality,
             status: CallStatus::Recorded,
             tokens: $tokens,
             cost: $cost,
-            tenantId: $this->tenants->resolve(),
+            agentStep: $this->trace->agentStep(),
+            purposeTag: $this->trace->purposeTag(),
+            tenantId: $this->trace->tenantId() ?? $this->tenants->resolve(),
+            costCenter: $this->trace->costCenter(),
             metadata: $price !== null ? ['price_source' => $price->source] : [],
         );
     }

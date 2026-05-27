@@ -6,6 +6,7 @@ namespace Padosoft\LaravelAiFinOps\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Models\UsageRecord;
 
 class UsageController
@@ -48,12 +49,20 @@ class UsageController
      * All ledger rows for a trace, with totals — the basis for the per-step
      * cost flame-graph in the admin.
      */
-    public function trace(string $traceId): JsonResponse
+    public function trace(string $traceId, QualityScoreProvider $quality): JsonResponse
     {
         $rows = UsageRecord::query()
             ->where('trace_id', $traceId)
             ->orderBy('id')
             ->get();
+
+        // Correlated cost + quality view: a quality score per distinct model in the
+        // trace (from the eval-harness seam; empty when not wired).
+        $models = $rows->pluck('model')->unique()->values();
+        $qualityByModel = $models
+            ->mapWithKeys(fn (string $m) => [$m => $quality->scoreFor($m)])
+            ->reject(fn ($score) => $score === null) // empty block when eval-harness isn't wired
+            ->all();
 
         return response()->json([
             'trace_id' => $traceId,
@@ -65,6 +74,7 @@ class UsageController
                 'tokens_output' => (int) $rows->sum('tokens_output'),
                 'currency' => $rows->first()->currency ?? config('ai-finops.currency.base', 'USD'),
             ],
+            'quality' => $qualityByModel,
         ]);
     }
 }
