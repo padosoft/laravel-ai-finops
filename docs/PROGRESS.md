@@ -5,7 +5,14 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
-### M4 — WOW features (branch `feat/core-wow`) — 8/9 (pending PR→main)
+### M7 — Finalization (branch `chore/release`) — IN PROGRESS
+- **M7.1** WOW README (core) written. No banner/screenshots (no `resources/`; admin owns those).
+- **M7.2** Consolidated LESSON.md gotchas into `docs/RULES.md` "Conventions & Gotchas".
+- **M7.3** Tag `vX.X.X` + GitHub release — PENDING user confirm (version + timing; public/irreversible).
+- Status: M0–M4 + M4.5 + M6 merged (PRs #1–#8). **Core feature-complete: 117 tests, CI 8.3/8.4/8.5.**
+  M5 (admin React UI) = Lorenzo's parallel track.
+
+### M4 — WOW features (branch `feat/core-wow`) — MERGED (PRs #6 + #7); 8/9 then M4.5 in PR #7
 - M4.1 Forecaster (run-rate) + AnomalyDetector + ack. M4.2 cost-aware routing (QualityScoreProvider seam →
   eval-harness; RoutingEngine; rules + simulate). M4.3 what-if (replay re-priced; scenarios).
   M4.4 StreamMeter (live cost + mid-stream cutoff). M4.6 credit pools (CRUD/topup/ledger).
