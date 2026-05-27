@@ -9,6 +9,7 @@ use Padosoft\LaravelAiFinOps\Http\Controllers\AuditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\ForecastController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PolicyController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
@@ -85,6 +86,12 @@ Route::group([
         Route::put('cost-centers/{id}', [ChargebackController::class, 'update'])->whereNumber('id')->name('ai-finops.cost-centers.update');
         Route::delete('cost-centers/{id}', [ChargebackController::class, 'destroy'])->whereNumber('id')->name('ai-finops.cost-centers.destroy');
         Route::get('chargeback/report', [ChargebackController::class, 'report'])->name('ai-finops.chargeback.report');
+
+        // Forecast & anomalies
+        Route::get('forecast', [ForecastController::class, 'index'])->name('ai-finops.forecast.index');
+        Route::get('forecast/{id}', [ForecastController::class, 'budget'])->whereNumber('id')->name('ai-finops.forecast.budget');
+        Route::get('anomalies', [ForecastController::class, 'anomalies'])->name('ai-finops.anomalies.index');
+        Route::post('anomalies/ack', [ForecastController::class, 'ackAnomaly'])->name('ai-finops.anomalies.ack');
 
         // Alerts
         Route::get('alerts/channels', [AlertController::class, 'channels'])->name('ai-finops.alerts.channels.index');
