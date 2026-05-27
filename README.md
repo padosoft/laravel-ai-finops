@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License">
 </p>
 
-![Laravel AI FinOps](resources/banner.png)
+![Laravel AI FinOps](resources/laravel-ai-finops-banner.png)
 
 `laravel-ai-finops` plugs into the official [`laravel/ai`](https://github.com/laravel/ai) SDK at a
 **single point** and meters **every** AI call — any provider, any model — then lets you set budgets,
@@ -149,7 +149,7 @@ React + Vite + Tailwind console that drives every endpoint below: live cost dash
 burndown, policies & approvals, cost-aware routing, forecasting & anomalies, what-if, chargeback,
 alerts, credit pools, CO₂/ESG and a natural-language FinOps copilot.
 
-![AI FinOps admin dashboard](resources/screenshots/admin-dashboard.png)
+![AI FinOps admin dashboard](resources/screenshoots/Ai-Finops-Web-Panel-Dashboard-Dark.png)
 
 ```bash
 composer require padosoft/laravel-ai-finops-admin
