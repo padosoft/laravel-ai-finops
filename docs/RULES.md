@@ -54,3 +54,31 @@ npm run e2e                   # Playwright (admin / UI slices)
 - Update `docs/LESSON.md` on any non-obvious setup fact, API contract detail, test workaround, or
   lesson learned from Copilot comments. Pass it to every subagent and re-read at session start.
 - Keep entries dated `YYYY-MM-DD`.
+
+## Conventions & Gotchas (consolidated from LESSON.md)
+
+These recurred across M0–M7; treat them as standing rules:
+
+- **Test helpers must not collide with Testbench/PHPUnit methods.** `seed()` and `status()` are
+  reserved (Orchestra `TestCase` / PHPUnit). Name fixtures `seedRow()`, `makeStatus()`, etc.
+- **Package routes default to `['api']`, not `['web']`.** The `web` group isn't registered in the
+  Testbench package context and errors at middleware resolution. Privileged endpoints get
+  `auth_middleware`; the host sets `['web']` where session/CSRF exist.
+- **JSON serializes whole floats as ints.** `assertJsonPath('x', 50.0)` fails when the value comes
+  back as `50`. Assert the int, or use `assertEquals` for tolerant numeric comparisons.
+- **Keep tests hermetic.** Bind an in‑memory `PricingSource` (and fake provider seams) in `TestCase`
+  so the suite never hits the LiteLLM network mirror.
+- **Eloquent `array` cast owns JSON encoding.** Don't `json_encode()` a value you store into an
+  `array`‑cast column (double‑encoding); pass the raw array.
+- **`Rule::exists()` must be connection‑qualified** (`"connection.table"`) when the package may use a
+  non‑default `storage.connection`.
+- **Composite uniques need non‑NULL sentinels.** NULLs aren't equal on MySQL/Postgres, so store `''`
+  (not NULL) for "global/unscoped" rows that participate in a unique index.
+- **Mutable per‑request services are `scoped`, not `singleton`** (e.g. `TraceContext`) — singletons
+  leak state across requests/jobs under Octane/Swoole/queue workers.
+- **Never fabricate favourable numbers.** Unpriced/unknown inputs return `null` + a message, not a
+  zero that implies "100% savings".
+- **Secrets never serialize.** Channel/provider configs expose only `has_*` booleans; audit redacts
+  sensitive keys.
+- **Sibling‑package integrations are Option‑1 seams** (contract + toggle + Null default), never hard
+  composer deps.

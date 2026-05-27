@@ -1,1 +1,202 @@
-# laravel-ai-finops
+# Laravel AI FinOps
+
+> **Govern every euro your AI spends.** Cross-provider metering, budgets, policy enforcement,
+> chargeback, forecasting and cost‑aware routing for Laravel — the FinOps/governance brick for AI agents.
+
+<p>
+  <a href="https://github.com/padosoft/laravel-ai-finops/actions/workflows/ci.yml"><img src="https://github.com/padosoft/laravel-ai-finops/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/PHP-8.3%20%7C%208.4%20%7C%208.5-777BB4" alt="PHP">
+  <img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20" alt="Laravel">
+  <img src="https://img.shields.io/badge/laravel%2Fai-0.6%20%7C%200.7-6366F1" alt="laravel/ai">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License">
+</p>
+
+`laravel-ai-finops` plugs into the official [`laravel/ai`](https://github.com/laravel/ai) SDK at a
+**single point** and meters **every** AI call — any provider, any model — then lets you set budgets,
+enforce policies, attribute spend, forecast overruns and route by quality‑per‑dollar. It is
+**zero‑hard‑dependency** on the rest of your stack: every sibling integration is an opt‑in seam.
+
+---
+
+## Table of Contents
+- [Why it's different](#why-its-different)
+- [Quick start](#quick-start)
+- [How it works](#how-it-works)
+- [Features](#features)
+- [API overview](#api-overview)
+- [Artisan commands](#artisan-commands)
+- [Integrations (opt‑in seams)](#integrations-optin-seams)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [License](#license)
+
+---
+
+## Why it's different
+
+Most tools either **track** cost or **block** it. This package does both, and goes further:
+
+- 🎯 **One hook, every provider.** A single listener on the `laravel/ai` lifecycle meters OpenAI,
+  Anthropic, Gemini, Mistral, DeepSeek, xAI, Bedrock, Azure, **and `padosoft/laravel-ai-regolo`** —
+  no per‑provider wiring.
+- 💸 **Always‑fresh pricing.** LiteLLM's 2,600+ model price DB as the base, **⊕ your local
+  overrides that win** — never ship stale hard‑coded prices again.
+- 🧱 **N‑scope budgets** (global → tenant → user → cost‑center → provider → model → agent → purpose) ×
+  periods (daily…yearly + rolling), with soft/hard limits and **in‑flight enforcement** (blocks the
+  call that *would* exceed, not one call late).
+- 🛡️ **Policy DSL + approvals** — declarative `block / require_approval / downgrade / throttle / queue`
+  with a human approval workflow; scoped **kill switches**; HTTP **402** enforcement.
+- 🧠 **Cost‑aware routing** — pick the cheapest model that clears a quality bar (quality from
+  `eval-harness`).
+- 🔮 **Forecasting & anomalies**, 🧪 **what‑if simulator** (replay traffic re‑priced on another model),
+  📡 **live streaming meter with mid‑stream cutoff**, 🌱 **CO₂/ESG footprint**, 💳 **prepaid credit
+  pools**, 📈 **provider price‑change watcher**, 🗣️ **NL FinOps copilot**.
+- 🧾 **Chargeback/showback**, immutable **audit trail**, multi‑currency, multi‑tenant, GDPR‑friendly.
+- 🔗 **Agentic glue** — a `trace‑id` + per‑step attribution stamps every call in an agent run, so a
+  `laravel-flow` run's cost is broken down step‑by‑step under one trace.
+
+Everything is **config‑toggleable** and **EU‑compliant by default**.
+
+---
+
+## Quick start
+
+```bash
+composer require padosoft/laravel-ai-finops
+php artisan vendor:publish --tag=ai-finops-config
+php artisan vendor:publish --tag=ai-finops-migrations
+php artisan migrate
+```
+
+That's it — if you're already using `laravel/ai`, **metering starts automatically**. Every agent
+prompt, embedding and stream is priced and written to the usage ledger.
+
+Add a budget and watch enforcement kick in:
+
+```php
+use Padosoft\LaravelAiFinOps\Models\Budget;
+
+Budget::create([
+    'name' => 'Monthly cap', 'scope_type' => 'global',
+    'limit_amount' => 500, 'currency' => 'EUR', 'period' => 'monthly',
+    'soft_limit_pct' => 80, 'hard' => true,
+]);
+// When the hard limit would be exceeded, the next AI call aborts with HTTP 402.
+```
+
+Attribute an agent run's cost per step:
+
+```php
+app(\Padosoft\LaravelAiFinOps\Support\TraceContext::class)->within(
+    ['trace_id' => $runId, 'agent_step' => 'summarize', 'tenant_id' => $tenantId],
+    fn () => $agent->respond($prompt), // every laravel/ai call here is metered under this trace+step
+);
+```
+
+---
+
+## How it works
+
+Each call becomes an **`AiCallEnvelope`** — a provider‑agnostic record (provider, model, tokens,
+cost, currency, tenant, cost‑center, agent step, purpose, `trace‑id`). It flows through the hook:
+
+1. **Pre‑flight** — estimate + `PolicyEngine` → `allow | block | throttle | downgrade | queue |
+   require‑approval` (kill switches, guardrails, hard budgets, declarative policies).
+2. **Post‑flight** — real usage → `CostCalculator` (LiteLLM ⊕ overrides) → append‑only **ledger** →
+   budgets, forecasts and alerts update.
+
+The envelope is also the **cross‑package contract**: any Padosoft package can populate its context
+tags so FinOps attributes and governs spend consistently.
+
+---
+
+## Features
+
+| Area | What you get |
+|------|--------------|
+| Metering | Single `laravel/ai` hook; immutable usage ledger; multimodal token tracking |
+| Pricing | LiteLLM mirror + local overrides (override wins); cache/discount aware |
+| Budgets | N‑scope hierarchy × periods; soft/hard; burndown; in‑flight enforcement |
+| Policies | DSL (scope + min‑cost + model) → block/approval/downgrade/throttle/queue; simulate |
+| Approvals | Pending → approve/reject workflow |
+| Kill switch | Global + per provider/tenant; config or stored |
+| Chargeback | Cost centers + allocation report (showback/chargeback) |
+| Forecast | Run‑rate projection + will‑exceed/exceed‑on; spike anomaly detection + ack |
+| Routing | Quality‑per‑dollar model selection (eval‑harness seam) |
+| What‑if | Replay historical traffic re‑priced on a target model → savings |
+| Streaming | Live cost meter + mid‑stream cutoff helper |
+| Credits | Prepaid pools + top‑up + ledger |
+| Alerts | Multi‑channel rules (mail/Slack/Teams/webhook/SMS) at % thresholds |
+| Footprint | Energy (kWh) + CO₂e estimate |
+| Audit | Immutable log of every governance mutation |
+| Copilot | Natural‑language questions over your spend (ai‑chat/AskMyDocs seam) |
+| Price watch | Detect provider list‑price changes for watched models |
+
+---
+
+## API overview
+
+All endpoints are mounted under `config('ai-finops.routes.prefix')` (default `/api/ai-finops`).
+The public `health` probe is open; every other endpoint is wrapped with `auth_middleware`.
+
+`usage` · `usage/{id}` · `usage/{traceId}/trace` · `pricing/*` · `budgets/*` · `policies/*` ·
+`approvals/*` · `cost-centers` · `chargeback/report` · `routing/*` · `forecast` · `anomalies` ·
+`whatif/*` · `footprint/*` · `credits/pools/*` · `alerts/*` · `price-watch/*` · `copilot/*` ·
+`audit` · `settings` · `settings/kill-switch` · `diagnostics/estimate` · `dashboard/*`
+
+> The companion **`laravel-ai-finops-admin`** (React + Vite + Tailwind) consumes this surface.
+
+---
+
+## Artisan commands
+
+```bash
+php artisan ai-finops:report --days=30     # spend summary
+php artisan ai-finops:prune --days=730     # ledger retention
+php artisan ai-finops:check-alerts         # evaluate alert thresholds (schedule it)
+php artisan ai-finops:capture-prices       # snapshot watched model prices
+```
+
+---
+
+## Integrations (opt‑in seams)
+
+No hard dependency on sibling packages — bind an adapter to enable each:
+
+| Contract | Enables | Backed by |
+|----------|---------|-----------|
+| `QualityScoreProvider` | cost‑aware routing | `padosoft/eval-harness` |
+| `GuardrailProvider` | guardrail‑linked spend | `laravel-pii-redactor` / `laravel-ai-act-compliance` |
+| `CopilotProvider` | NL FinOps copilot | `laravel-ai-chat` / `AskMyDocs` |
+
+```php
+$this->app->singleton(\Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider::class, MyEvalHarnessScores::class);
+```
+
+Then flip the matching toggle under `config('ai-finops.integrations.*')` / `features.*`.
+
+---
+
+## Configuration
+
+`config/ai-finops.php` toggles everything: master `enabled` / `metering` / `enforcement`, scoped
+`kill_switch`, multi‑tenancy resolver, currency + FX, pricing source, per‑feature flags, alert
+channels, footprint factors, retention. Sensible, EU‑friendly defaults out of the box.
+
+---
+
+## Testing
+
+```bash
+composer install
+vendor/bin/phpunit          # Unit + Feature + E2E
+vendor/bin/pint --test      # code style
+```
+
+The suite is hermetic (no network) and runs on PHP 8.3 / 8.4 / 8.5 in CI.
+
+---
+
+## License
+
+Apache‑2.0 © [Padosoft](https://github.com/padosoft)
