@@ -40,7 +40,9 @@ class PolicyEngine
             return PolicyDecision::block($killReason);
         }
 
-        if ($this->config->get('ai-finops.enforcement', true)) {
+        $enforce = (bool) $this->config->get('ai-finops.enforcement', true);
+
+        if ($enforce) {
             // Include the in-flight estimated cost so a call that WOULD push a hard
             // budget over its limit is blocked before it runs (not one call late).
             $inFlight = max(0.0, $envelope->cost->total);
@@ -62,14 +64,14 @@ class PolicyEngine
             }
         }
 
-        if (($policyDecision = $this->evaluatePolicies($envelope)) !== null) {
+        if (($policyDecision = $this->evaluatePolicies($envelope, $enforce)) !== null) {
             return $policyDecision;
         }
 
         return PolicyDecision::allow();
     }
 
-    private function evaluatePolicies(AiCallEnvelope $envelope): ?PolicyDecision
+    private function evaluatePolicies(AiCallEnvelope $envelope, bool $enforce): ?PolicyDecision
     {
         try {
             $policies = Policy::query()->where('enabled', true)->orderBy('priority')->orderBy('id')->get();
@@ -79,6 +81,12 @@ class PolicyEngine
 
         foreach ($policies as $policy) {
             if (! $policy->matches($envelope)) {
+                continue;
+            }
+
+            // Observability mode (enforcement off): halting policy actions are skipped
+            // so they don't abort calls; advisory actions are still surfaced.
+            if (! $enforce && in_array($policy->action(), [PolicyAction::Block, PolicyAction::RequireApproval], true)) {
                 continue;
             }
 

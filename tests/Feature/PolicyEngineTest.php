@@ -157,6 +157,22 @@ class PolicyEngineTest extends TestCase
         $this->assertSame('gpt-5.1-mini', $decision->suggestedModel);
     }
 
+    public function test_enforcement_off_skips_halting_policies_but_keeps_advisory(): void
+    {
+        config(['ai-finops.enforcement' => false]);
+
+        Policy::create(['name' => 'block big', 'scope_type' => 'global', 'min_cost' => 1.0, 'action' => 'block', 'priority' => 10]);
+        Policy::create(['name' => 'downgrade', 'scope_type' => 'global', 'action' => 'downgrade', 'action_param' => 'gpt-5.1-mini', 'priority' => 20]);
+
+        $envelope = new AiCallEnvelope(traceId: 't', provider: 'openai', model: 'gpt-5.1', cost: new CostBreakdown(total: 5.0, currency: 'USD'));
+
+        $decision = $this->engine()->evaluate($envelope);
+
+        // The block policy is skipped (observability mode); the advisory downgrade is surfaced.
+        $this->assertFalse($decision->halts());
+        $this->assertSame('gpt-5.1-mini', $decision->suggestedModel);
+    }
+
     public function test_enforcement_listener_throws_402_when_blocked(): void
     {
         config(['ai-finops.kill_switch' => true]);

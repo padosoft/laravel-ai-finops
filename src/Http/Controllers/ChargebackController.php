@@ -72,7 +72,9 @@ class ChargebackController
         ]);
 
         return response()->json([
-            'currency' => config('ai-finops.currency.display', config('ai-finops.currency.base', 'USD')),
+            // Totals are summed in the stored/base currency; no FX is applied here,
+            // so report the base currency to avoid mislabeling figures.
+            'currency' => config('ai-finops.currency.base', 'USD'),
             'total' => round((float) (clone $query)->sum('cost_total'), 6),
             'data' => $data->values(),
         ]);
