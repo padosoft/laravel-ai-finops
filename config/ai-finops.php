@@ -167,6 +167,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Carbon / energy footprint (ESG)
+    |--------------------------------------------------------------------------
+    | Rough estimate: energy (kWh) = tokens/1000 × kwh_per_1k_tokens; emissions
+    | (gCO2e) = energy × grid_gco2_per_kwh. Defaults are conservative placeholders;
+    | tune per your providers/region.
+    */
+    'footprint' => [
+        'kwh_per_1k_tokens' => env('AI_FINOPS_KWH_PER_1K', 0.0005),
+        'grid_gco2_per_kwh' => env('AI_FINOPS_GCO2_PER_KWH', 400),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Integrations with sibling Padosoft packages (optional, off by default)
     |--------------------------------------------------------------------------
     */

@@ -15,6 +15,7 @@ use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
+use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
@@ -27,6 +28,7 @@ use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -39,6 +41,12 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
         $this->app->singleton(PricingRegistry::class);
+
+        // Seam for eval-harness quality scores; host binds a real adapter when wired.
+        $this->app->singleton(
+            QualityScoreProvider::class,
+            NullQualityScoreProvider::class,
+        );
     }
 
     public function boot(): void
