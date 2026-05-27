@@ -5,6 +5,16 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
+### M3 — Enterprise governance (branch `feat/core-enterprise`) — IN PROGRESS
+- **M3.1** Chargeback/showback: CostCenter model + cost-centers CRUD + allocation report (unallocated bucket).
+- **M3.2** Declarative policies (Policy DSL: scope+min_cost+model match → action), PolicyController CRUD/validate/simulate;
+  approval workflow (SpendApproval + ApprovalController); PolicyEngine consults policies (Block & RequireApproval halt,
+  Downgrade/Throttle/Queue advisory).
+- **M3.3** Audit trail (AuditObserver on all governance models → audit_log + GET /audit, config-toggle, secret redaction);
+  FxConverter (base→display, callable provider, 1:1 fallback).
+- Shipping M3.1–M3.3 as PR "M3 (1/2)". **M3.4 alerts (multi-channel + thresholds) = remaining**, next branch.
+- Gates GREEN locally: PHPUnit **84/84**, Pint passed, hermetic.
+
 ### M2 — Budgets & enforcement (branch `feat/core-budgets`) — COMPLETE (pending macro PR→main)
 - **M2.1** Budget hierarchy (scopes + periods), `BudgetResolver`, `BudgetStatus`, Budgets API (CRUD/tree/burndown).
 - **M2.2** `PolicyEngine` (config + scoped kill-switch + hard-budget-exceeded block); `EnforcementListener`

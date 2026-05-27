@@ -10,12 +10,19 @@ use Laravel\Ai\Events\AgentStreamed;
 use Laravel\Ai\Events\EmbeddingsGenerated;
 use Laravel\Ai\Events\GeneratingEmbeddings;
 use Laravel\Ai\Events\PromptingAgent;
+use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
+use Padosoft\LaravelAiFinOps\Models\Budget;
+use Padosoft\LaravelAiFinOps\Models\CostCenter;
+use Padosoft\LaravelAiFinOps\Models\KillSwitch;
+use Padosoft\LaravelAiFinOps\Models\Policy;
+use Padosoft\LaravelAiFinOps\Models\PricingOverride;
+use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
@@ -64,6 +71,26 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->bootRoutes();
         $this->bootMeteringHook();
         $this->bootEnforcementHook();
+        $this->bootAuditObservers();
+    }
+
+    /** Observe governance models so mutations land in the audit log. */
+    private function bootAuditObservers(): void
+    {
+        if (! config('ai-finops.audit.enabled', true)) {
+            return;
+        }
+
+        foreach ([
+            Budget::class,
+            Policy::class,
+            KillSwitch::class,
+            CostCenter::class,
+            SpendApproval::class,
+            PricingOverride::class,
+        ] as $model) {
+            $model::observe(AuditObserver::class);
+        }
     }
 
     /**
