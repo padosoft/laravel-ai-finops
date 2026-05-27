@@ -11,6 +11,8 @@
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License">
 </p>
 
+![Laravel AI FinOps](resources/banner.png)
+
 `laravel-ai-finops` plugs into the official [`laravel/ai`](https://github.com/laravel/ai) SDK at a
 **single point** and meters **every** AI call — any provider, any model — then lets you set budgets,
 enforce policies, attribute spend, forecast overruns and route by quality‑per‑dollar. It is
@@ -23,6 +25,7 @@ enforce policies, attribute spend, forecast overruns and route by quality‑per�
 - [Quick start](#quick-start)
 - [How it works](#how-it-works)
 - [Features](#features)
+- [Web Admin Panel](#web-admin-panel)
 - [API overview](#api-overview)
 - [Artisan commands](#artisan-commands)
 - [Integrations (opt‑in seams)](#integrations-optin-seams)
@@ -135,6 +138,24 @@ tags so FinOps attributes and governs spend consistently.
 | Audit | Immutable log of every governance mutation |
 | Copilot | Natural‑language questions over your spend (ai‑chat/AskMyDocs seam) |
 | Price watch | Detect provider list‑price changes for watched models |
+
+---
+
+## Web Admin Panel
+
+A **WOW, production-grade web admin panel** ships separately as
+[`padosoft/laravel-ai-finops-admin`](https://github.com/padosoft/laravel-ai-finops-admin) — a
+React + Vite + Tailwind console that drives every endpoint below: live cost dashboards, budgets &
+burndown, policies & approvals, cost-aware routing, forecasting & anomalies, what-if, chargeback,
+alerts, credit pools, CO₂/ESG and a natural-language FinOps copilot.
+
+![AI FinOps admin dashboard](resources/screenshots/admin-dashboard.png)
+
+```bash
+composer require padosoft/laravel-ai-finops-admin
+```
+
+Then open `/admin/ai-finops`. The panel consumes this package's API (session + CSRF) — no mocks.
 
 ---
 
