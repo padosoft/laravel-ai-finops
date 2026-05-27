@@ -59,7 +59,10 @@ class UsageController
         // Correlated cost + quality view: a quality score per distinct model in the
         // trace (from the eval-harness seam; empty when not wired).
         $models = $rows->pluck('model')->unique()->values();
-        $qualityByModel = $models->mapWithKeys(fn (string $m) => [$m => $quality->scoreFor($m)])->all();
+        $qualityByModel = $models
+            ->mapWithKeys(fn (string $m) => [$m => $quality->scoreFor($m)])
+            ->reject(fn ($score) => $score === null) // empty block when eval-harness isn't wired
+            ->all();
 
         return response()->json([
             'trace_id' => $traceId,

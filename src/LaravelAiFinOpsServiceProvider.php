@@ -44,7 +44,9 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(self::CONFIG_PATH, 'ai-finops');
 
-        $this->app->singleton(TraceContext::class);
+        // Scoped (not singleton): reset at each request/job boundary so a worker
+        // (Octane/Swoole/queue) never bleeds one run's trace/tenant into the next.
+        $this->app->scoped(TraceContext::class);
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
         $this->app->singleton(PricingRegistry::class);
