@@ -42,10 +42,16 @@ class PricingController
     public function sync(PricingRegistry $registry): JsonResponse
     {
         $count = $registry->sync();
-        $at = now()->toIso8601String();
-        Cache::forever(self::SYNC_AT_KEY, $at);
+        $synced = $count > 0;
 
-        return response()->json(['synced' => true, 'models' => $count, 'synced_at' => $at]);
+        // Only persist the timestamp when the sync actually retrieved data.
+        $at = Cache::get(self::SYNC_AT_KEY);
+        if ($synced) {
+            $at = now()->toIso8601String();
+            Cache::forever(self::SYNC_AT_KEY, $at);
+        }
+
+        return response()->json(['synced' => $synced, 'models' => $count, 'synced_at' => $at]);
     }
 
     public function syncStatus(PricingSource $source): JsonResponse
@@ -70,7 +76,7 @@ class PricingController
             $data,
         );
 
-        return response()->json($override, 201);
+        return response()->json($override, $override->wasRecentlyCreated ? 201 : 200);
     }
 
     public function updateOverride(Request $request, string $id): JsonResponse

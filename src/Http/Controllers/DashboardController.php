@@ -22,7 +22,8 @@ class DashboardController
         $cost = (float) (clone $base)->sum('cost_total');
 
         return response()->json([
-            'currency' => config('ai-finops.currency.display', config('ai-finops.currency.base', 'USD')),
+            // No FX conversion in M1: report in the stored base currency, not display.
+            'currency' => config('ai-finops.currency.base', 'USD'),
             'cost_today' => round((float) $today, 6),
             'cost_month_to_date' => round((float) $month, 6),
             'cost_total' => round($cost, 6),
@@ -35,6 +36,7 @@ class DashboardController
 
     public function spendTrend(Request $request): JsonResponse
     {
+        $request->validate(['from' => 'nullable|date']);
         $from = $request->filled('from') ? $request->date('from') : now()->subDays(30);
 
         $rows = UsageRecord::query()
@@ -61,7 +63,7 @@ class DashboardController
     }
 
     /** @return Collection<int,object> */
-    private function topBy(string $column, Request $request)
+    private function topBy(string $column, Request $request): Collection
     {
         $limit = min(50, max(1, (int) $request->integer('limit', 10)));
 

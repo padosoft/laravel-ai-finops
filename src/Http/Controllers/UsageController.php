@@ -27,10 +27,12 @@ class UsageController
         }
 
         if ($request->filled('from')) {
+            $request->validate(['from' => 'date']);
             $query->where('created_at', '>=', $request->date('from'));
         }
 
         if ($request->filled('to')) {
+            $request->validate(['to' => 'date']);
             $query->where('created_at', '<=', $request->date('to'));
         }
 

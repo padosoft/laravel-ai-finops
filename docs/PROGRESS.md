@@ -12,6 +12,7 @@ continue cleanly after an interruption.
 - **M1.4** `PricingRegistry` (LiteLLM base ⊕ Padosoft override wins) + `LiteLLMPricingSource` + `CostCalculator`; wired into the hook (real cost + price_source).
 - **M1.5** API: Usage (`index`/`show`/`trace`) + Pricing (`models`/`sync`/`sync/status`/overrides CRUD). Privileged routes gated by `auth_middleware`; public `health`.
 - **M1.6** API: Dashboard (`kpis`/`spend-trend`/`top-models`/`top-tenants`).
+- **M1-review** Copilot `/review` applied 4 fixes: (1) `kpis()` currency label was `display` (no FX in M1) → changed to `base`; (2) `sync()` updated `synced_at` even on failure → only on success; (3) `spendTrend()`/`index()` `$request->date()` could 500 on invalid input → validate first; (4) `storeOverride()` always returned 201 → uses `wasRecentlyCreated`.
 - Gates GREEN locally: PHPUnit **40/40**, Pint passed, hermetic (no network). Next: macro PR `feat/core-metering`→main with Copilot loop.
 
 
