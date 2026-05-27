@@ -2,7 +2,8 @@
 
 ## Source Of Truth
 
-- Canonical plan: `%USERPROFILE%\.claude\plans\allora-leggi-questi-repo-polished-hearth.md`.
+- Canonical plan: **`docs/PLAN.md`** (repo-relative; author's local copy lives under `~/.claude/plans/`
+  on Unix or `%USERPROFILE%\.claude\plans\` on Windows).
 - Governance reference (copied/adapted from): `../product_image_discovery_admin` (AGENTS.md, docs/*).
 - README "WOW" model: `https://github.com/lopadova/AskMyDocs/blob/main/README.md`.
 - Backbone SDK contract: the official `laravel/ai` package (`^0.6.8 || ^0.7`).

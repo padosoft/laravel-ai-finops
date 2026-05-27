@@ -2,6 +2,7 @@
 
 Project memory for Claude Code. **Read `AGENTS.md`, `docs/RULES.md`, `docs/PROGRESS.md`, and
 `docs/LESSON.md` at the start of every session** — they are the authoritative operating rules.
+The canonical implementation plan is `docs/PLAN.md`.
 
 ## What this is
 `padosoft/laravel-ai-finops`: enterprise AI spend-governance for Laravel (metering + budgets + policy

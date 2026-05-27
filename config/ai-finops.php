@@ -8,9 +8,11 @@ return [
     |--------------------------------------------------------------------------
     | Master switches
     |--------------------------------------------------------------------------
-    | `enabled` turns the whole package on/off. `metering` records usage,
-    | `enforcement` applies budgets/policies (block/throttle/etc). Disabling
-    | enforcement keeps observability without ever blocking a call.
+    | `enabled` gates RUNTIME behavior: route registration and (from M1) the
+    | metering hook. Config and migration publishing remain available even when
+    | disabled, so the package can still be installed and managed.
+    | `metering` records usage; `enforcement` applies budgets/policies
+    | (block/throttle/etc) — disabling it keeps observability without blocking.
     */
     'enabled' => env('AI_FINOPS_ENABLED', true),
     'metering' => env('AI_FINOPS_METERING', true),
@@ -94,11 +96,19 @@ return [
     |--------------------------------------------------------------------------
     | HTTP / API
     |--------------------------------------------------------------------------
+    | `middleware` wraps ALL package routes (default ['api'] — portable and
+    | available even outside a full HTTP kernel). `auth_middleware` is applied
+    | ON TOP of privileged (non-public) endpoints introduced from M1 onward;
+    | only the public `health` probe omits it, and no endpoint returns secrets.
+    | When serving the admin, set `middleware` => ['web'] so session + CSRF are
+    | active; the admin package also adds session/CSRF wrappers under
+    | `/admin/ai-finops/*`.
     */
     'routes' => [
         'enabled' => true,
         'prefix' => 'api/ai-finops',
         'middleware' => ['api'],
+        'auth_middleware' => ['auth'],
     ],
 
     /*

@@ -7,7 +7,7 @@ description: Use when working on the laravel-ai-finops package (or its admin) to
 
 Before editing anything:
 1. Read `docs/PROGRESS.md` (resume point), `docs/LESSON.md` (discoveries), `docs/RULES.md`, `AGENTS.md`.
-2. Read the canonical plan: `%USERPROFILE%\.claude\plans\allora-leggi-questi-repo-polished-hearth.md`.
+2. Read the canonical plan: `docs/PLAN.md` (repo-relative; local copy under `~/.claude/plans/`).
 3. Identify the current macro-task (M0–M7) and the smallest open subtask.
 
 For each subtask:

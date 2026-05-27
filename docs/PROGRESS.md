@@ -21,5 +21,5 @@ continue cleanly after an interruption.
 - **Next (resume point):** local Copilot review of the branch diff → push → open PR
   `chore/governance-bootstrap` → main → Copilot reviewer + CI → merge. Then start M1 (metering foundation).
 
-> Plan: `%USERPROFILE%\.claude\plans\allora-leggi-questi-repo-polished-hearth.md`
-> Macro tasks M0–M7 tracked in the session task list.
+> Plan: `docs/PLAN.md` (repo-relative; author's local copy under `~/.claude/plans/` or
+> `%USERPROFILE%\.claude\plans\`). Macro tasks M0–M7 tracked in the session task list.

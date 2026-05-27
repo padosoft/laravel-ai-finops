@@ -5,11 +5,8 @@ every AI call cross-provider, enforces budgets/policies, and provides FinOps (ch
 alerts, routing). It is the missing "governance" brick of the Padosoft agentic ecosystem.
 
 The companion admin app lives in the sibling repo `../laravel-ai-finops-admin`.
-The durable implementation plan is at:
-
-```text
-%USERPROFILE%\.claude\plans\allora-leggi-questi-repo-polished-hearth.md
-```
+The durable implementation plan is checked into this repo at **`docs/PLAN.md`**
+(author's local working copy: `~/.claude/plans/` on Unix, `%USERPROFILE%\.claude\plans\` on Windows).
 
 If context is missing, read the plan first, then read:
 
