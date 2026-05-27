@@ -5,6 +5,18 @@ continue cleanly after an interruption.
 
 ## 2026-05-27
 
+### M2 — Budgets & enforcement (branch `feat/core-budgets`) — COMPLETE (pending macro PR→main)
+- **M2.1** Budget hierarchy (scopes + periods), `BudgetResolver`, `BudgetStatus`, Budgets API (CRUD/tree/burndown).
+- **M2.2** `PolicyEngine` (config + scoped kill-switch + hard-budget-exceeded block); `EnforcementListener`
+  on laravel/ai PRE-events (`PromptingAgent`/`GeneratingEmbeddings`) throwing `BudgetExceededException`
+  (HTTP 402); `KillSwitch` model/migration; Settings API (read-only snapshot), kill-switch GET/POST,
+  diagnostics/estimate. Shared `TenantResolver` (MeteringListener refactored to use it).
+- **M2.3** Artisan `ai-finops:report` + `ai-finops:prune`. NOTE: the inspiration packages' `reset-budgets`
+  is unnecessary here — budget periods are computed from the ledger, so there is nothing to reset;
+  `prune` (retention) replaces it.
+- Reordering note: advanced Policy DSL + Policies CRUD moved to M3 (with throttle/downgrade/approval).
+- Gates GREEN locally: PHPUnit **66/66**, Pint passed, hermetic. Next: macro PR `feat/core-budgets`→main.
+
 ### M1 — Metering foundation (branch `feat/core-metering`) — COMPLETE (pending macro PR→main)
 - **M1.1** Assessment: backbone `laravel/ai` confirmed; `agentic-qa-kit` is Bun/TS (external QA runner). Recorded in LESSON.
 - **M1.2** `AiCallEnvelope` + `TokenUsage`/`CostBreakdown` + enums; immutable `ai_finops_usage_ledger` + `UsageRecord`.

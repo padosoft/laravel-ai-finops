@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\UsageController;
 
 /*
@@ -57,5 +58,11 @@ Route::group([
         Route::get('dashboard/spend-trend', [DashboardController::class, 'spendTrend'])->name('ai-finops.dashboard.spend-trend');
         Route::get('dashboard/top-models', [DashboardController::class, 'topModels'])->name('ai-finops.dashboard.top-models');
         Route::get('dashboard/top-tenants', [DashboardController::class, 'topTenants'])->name('ai-finops.dashboard.top-tenants');
+
+        // Settings / kill-switch / diagnostics
+        Route::get('settings', [SettingsController::class, 'index'])->name('ai-finops.settings.index');
+        Route::get('settings/kill-switch', [SettingsController::class, 'killSwitches'])->name('ai-finops.settings.kill-switch.index');
+        Route::post('settings/kill-switch', [SettingsController::class, 'setKillSwitch'])->name('ai-finops.settings.kill-switch.set');
+        Route::post('diagnostics/estimate', [SettingsController::class, 'estimate'])->name('ai-finops.diagnostics.estimate');
     });
 });
