@@ -55,7 +55,13 @@ class BudgetController
 
     public function destroy(string $id): JsonResponse
     {
-        Budget::query()->findOrFail($id)->delete();
+        $budget = Budget::query()->findOrFail($id);
+
+        // Re-parent children to the deleted node's parent so the tree never orphans
+        // budgets that are still enforced/listed.
+        Budget::query()->where('parent_id', $budget->id)->update(['parent_id' => $budget->parent_id]);
+
+        $budget->delete();
 
         return response()->json(['deleted' => true]);
     }
@@ -113,7 +119,7 @@ class BudgetController
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'parent_id' => ['nullable', 'integer', Rule::exists($this->table(), 'id')->where(
+            'parent_id' => ['nullable', 'integer', Rule::exists($this->existsTarget(), 'id')->where(
                 fn ($q) => $ignoreId ? $q->where('id', '!=', $ignoreId) : $q,
             )],
             'scope_type' => ['required', Rule::enum(BudgetScope::class)],
@@ -133,5 +139,13 @@ class BudgetController
     private function table(): string
     {
         return config('ai-finops.storage.table_prefix', 'ai_finops_').'budgets';
+    }
+
+    /** Qualify the exists() target with the configured connection ("connection.table"). */
+    private function existsTarget(): string
+    {
+        $connection = config('ai-finops.storage.connection');
+
+        return ($connection ? $connection.'.' : '').$this->table();
     }
 }

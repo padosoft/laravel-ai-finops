@@ -36,8 +36,19 @@ class PolicyEngine
         }
 
         if ($this->config->get('ai-finops.enforcement', true)) {
+            // Include the in-flight estimated cost so a call that WOULD push a hard
+            // budget over its limit is blocked before it runs (not one call late).
+            $inFlight = max(0.0, $envelope->cost->total);
+
             foreach ($this->budgets->applicableTo($envelope) as $budget) {
-                if ($budget->hard && $budget->status()->exceeded()) {
+                if (! $budget->hard) {
+                    continue;
+                }
+
+                $status = $budget->status();
+                $limit = (float) $budget->limit_amount;
+
+                if ($status->exceeded() || ($limit > 0 && ($status->spent + $inFlight) >= $limit)) {
                     return PolicyDecision::block(
                         "hard budget exceeded: {$budget->name}",
                         (int) $budget->id,

@@ -57,6 +57,10 @@ class EnforcementListener
 
     private function providerName(mixed $provider): string
     {
+        if (is_string($provider) && $provider !== '') {
+            return $provider;
+        }
+
         if (is_object($provider) && method_exists($provider, 'name')) {
             try {
                 return (string) $provider->name();

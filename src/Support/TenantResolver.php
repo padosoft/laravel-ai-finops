@@ -27,7 +27,9 @@ class TenantResolver
             return null;
         }
 
-        if (is_string($resolver) && $this->container->bound($resolver)) {
+        // Accept a class-string (invokable) even when not explicitly bound — a
+        // common Laravel pattern; the container can resolve concrete classes.
+        if (is_string($resolver) && ($this->container->bound($resolver) || class_exists($resolver))) {
             $resolver = $this->container->make($resolver);
         }
 

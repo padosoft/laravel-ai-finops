@@ -60,6 +60,27 @@ class PolicyEngineTest extends TestCase
         $this->assertNotNull($decision->budgetId);
     }
 
+    public function test_in_flight_estimated_cost_blocks_before_overspending(): void
+    {
+        Budget::create(['name' => 'Global', 'scope_type' => 'global', 'limit_amount' => 10.0, 'period' => 'monthly', 'hard' => true]);
+        UsageRecord::fromEnvelope(new AiCallEnvelope(
+            traceId: 'x', provider: 'openai', model: 'gpt-5.1',
+            tokens: new TokenUsage, cost: new CostBreakdown(total: 9.9, currency: 'USD'),
+        ))->save();
+
+        // Already-spent 9.9 is under the 10 limit, but a $1 in-flight call would exceed it.
+        $estimate = new AiCallEnvelope(
+            traceId: 't', provider: 'openai', model: 'gpt-5.1',
+            cost: new CostBreakdown(total: 1.0, currency: 'USD'),
+        );
+
+        $this->assertTrue($this->engine()->evaluate($estimate)->blocked());
+
+        // A tiny in-flight cost still fits.
+        $small = new AiCallEnvelope(traceId: 't', provider: 'openai', model: 'gpt-5.1', cost: new CostBreakdown(total: 0.01, currency: 'USD'));
+        $this->assertFalse($this->engine()->evaluate($small)->blocked());
+    }
+
     public function test_soft_budget_does_not_block(): void
     {
         Budget::create(['name' => 'Soft', 'scope_type' => 'global', 'limit_amount' => 1.0, 'period' => 'monthly', 'hard' => false]);

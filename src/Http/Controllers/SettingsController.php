@@ -54,8 +54,9 @@ class SettingsController
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Normalise global scope_id to null for a stable unique-key lookup.
-        $data['scope_id'] = $data['scope_type'] === 'global' ? null : ($data['scope_id'] ?? null);
+        // Normalise scope_id to '' (not NULL) so the composite unique index dedupes
+        // the global/unscoped row reliably across MySQL/Postgres.
+        $data['scope_id'] = $data['scope_type'] === 'global' ? '' : ($data['scope_id'] ?? '');
 
         $switch = KillSwitch::updateOrCreate(
             ['scope_type' => $data['scope_type'], 'scope_id' => $data['scope_id']],

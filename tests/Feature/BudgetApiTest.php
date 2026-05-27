@@ -62,6 +62,20 @@ class BudgetApiTest extends TestCase
             ->assertJsonPath('data.0.children.0.name', 'Team');
     }
 
+    public function test_deleting_parent_reparents_children(): void
+    {
+        $parent = Budget::create(['name' => 'Org', 'scope_type' => 'global', 'limit_amount' => 1000, 'period' => 'monthly']);
+        $child = Budget::create(['name' => 'Team', 'parent_id' => $parent->id, 'scope_type' => 'cost_center', 'scope_id' => 'team-a', 'limit_amount' => 100, 'period' => 'monthly']);
+
+        $this->deleteJson("/api/ai-finops/budgets/{$parent->id}")->assertOk();
+
+        // Child survives and is re-parented to the deleted node's parent (null → root).
+        $this->assertDatabaseHas((new Budget)->getTable(), ['id' => $child->id, 'parent_id' => null]);
+        $this->getJson('/api/ai-finops/budgets/tree')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Team');
+    }
+
     public function test_burndown_returns_series(): void
     {
         $b = Budget::create(['name' => 'g', 'scope_type' => 'global', 'limit_amount' => 100, 'period' => 'monthly']);

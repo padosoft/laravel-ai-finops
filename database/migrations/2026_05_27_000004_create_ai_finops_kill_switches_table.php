@@ -23,7 +23,9 @@ return new class extends Migration
         Schema::connection($this->connection())->create($this->table(), function (Blueprint $table): void {
             $table->bigIncrements('id');
             $table->string('scope_type', 32)->default('global'); // global|provider|tenant|feature
-            $table->string('scope_id', 128)->nullable();
+            // Empty string (not NULL) for global/unscoped so the composite unique index
+            // actually dedupes — NULLs are not considered equal on MySQL/Postgres.
+            $table->string('scope_id', 128)->default('');
             $table->boolean('active')->default(true);
             $table->string('reason')->nullable();
             $table->timestamps();
