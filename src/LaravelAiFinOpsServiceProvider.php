@@ -17,17 +17,20 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $migrations = __DIR__.'/../database/migrations';
+        if (is_dir($migrations)) {
+            $this->loadMigrationsFrom($migrations);
+        }
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 self::CONFIG_PATH => $this->app->configPath('ai-finops.php'),
             ], 'ai-finops-config');
 
-            $migrations = __DIR__.'/../database/migrations';
             if (is_dir($migrations)) {
                 $this->publishes([
                     $migrations => $this->app->databasePath('migrations'),
                 ], 'ai-finops-migrations');
-                $this->loadMigrationsFrom($migrations);
             }
         }
 
