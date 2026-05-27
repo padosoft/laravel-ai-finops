@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace Padosoft\LaravelAiFinOps;
 
 use Illuminate\Support\ServiceProvider;
+use Laravel\Ai\Events\AgentPrompted;
+use Laravel\Ai\Events\AgentStreamed;
+use Laravel\Ai\Events\EmbeddingsGenerated;
+use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
+use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
+use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -13,6 +19,8 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(self::CONFIG_PATH, 'ai-finops');
+
+        $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
     }
 
     public function boot(): void
@@ -39,6 +47,33 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         }
 
         $this->bootRoutes();
+        $this->bootMeteringHook();
+    }
+
+    /**
+     * Register the single metering hook on the laravel/ai lifecycle. Guarded by
+     * class_exists so the package works (metering becomes a manual no-op) when
+     * laravel/ai is not installed.
+     */
+    private function bootMeteringHook(): void
+    {
+        if (! config('ai-finops.metering', true)) {
+            return;
+        }
+
+        if (! config('ai-finops.hook.auto_register', true)) {
+            return;
+        }
+
+        if (! class_exists(AgentPrompted::class)) {
+            return;
+        }
+
+        $events = $this->app['events'];
+
+        $events->listen(AgentPrompted::class, [MeteringListener::class, 'handleAgentPrompted']);
+        $events->listen(AgentStreamed::class, [MeteringListener::class, 'handleAgentPrompted']);
+        $events->listen(EmbeddingsGenerated::class, [MeteringListener::class, 'handleEmbeddingsGenerated']);
     }
 
     private function bootRoutes(): void
