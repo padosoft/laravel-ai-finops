@@ -14,6 +14,7 @@ use Padosoft\LaravelAiFinOps\Models\UsageRecord;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Support\TenantResolver;
+use Padosoft\LaravelAiFinOps\Support\TraceContext;
 use Padosoft\LaravelAiFinOps\Tests\Support\ArrayPricingSource;
 use Padosoft\LaravelAiFinOps\Tests\TestCase;
 
@@ -37,6 +38,7 @@ class MeteringCostTest extends TestCase
             new PricingRegistry($source, $this->app['config']),
             new CostCalculator,
             $this->app->make(TenantResolver::class),
+            $this->app->make(TraceContext::class),
         );
 
         $listener->recordAgentResponse('inv-cost', new AgentResponse(

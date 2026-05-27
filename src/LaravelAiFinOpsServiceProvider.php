@@ -34,6 +34,7 @@ use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
+use Padosoft\LaravelAiFinOps\Support\TraceContext;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -43,6 +44,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(self::CONFIG_PATH, 'ai-finops');
 
+        $this->app->singleton(TraceContext::class);
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
         $this->app->singleton(PricingRegistry::class);
