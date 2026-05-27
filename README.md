@@ -42,8 +42,9 @@ Most tools either **track** cost or **block** it. This package does both, and go
 - 💸 **Always‑fresh pricing.** LiteLLM's 2,600+ model price DB as the base, **⊕ your local
   overrides that win** — never ship stale hard‑coded prices again.
 - 🧱 **N‑scope budgets** (global → tenant → user → cost‑center → provider → model → agent → purpose) ×
-  periods (daily…yearly + rolling), with soft/hard limits and **in‑flight enforcement** (blocks the
-  call that *would* exceed, not one call late).
+  periods (daily…yearly + rolling), with soft/hard limits. A hard budget blocks further calls with
+  HTTP **402**; pass a pre‑flight cost estimate (or use `diagnostics/estimate`) to also block the
+  single call that *would* exceed.
 - 🛡️ **Policy DSL + approvals** — declarative `block / require_approval / downgrade / throttle / queue`
   with a human approval workflow; scoped **kill switches**; HTTP **402** enforcement.
 - 🧠 **Cost‑aware routing** — pick the cheapest model that clears a quality bar (quality from
@@ -78,10 +79,13 @@ use Padosoft\LaravelAiFinOps\Models\Budget;
 
 Budget::create([
     'name' => 'Monthly cap', 'scope_type' => 'global',
-    'limit_amount' => 500, 'currency' => 'EUR', 'period' => 'monthly',
+    // Budgets compare against spend in the base currency (default USD). Set
+    // ai-finops.currency.base (and an FX provider) to budget in another currency.
+    'limit_amount' => 500, 'currency' => 'USD', 'period' => 'monthly',
     'soft_limit_pct' => 80, 'hard' => true,
 ]);
-// When the hard limit would be exceeded, the next AI call aborts with HTTP 402.
+// Once the hard limit is reached, further AI calls abort with HTTP 402.
+// Pass a pre-flight estimate to also block the single call that would exceed.
 ```
 
 Attribute an agent run's cost per step:
@@ -136,8 +140,9 @@ tags so FinOps attributes and governs spend consistently.
 
 ## API overview
 
-All endpoints are mounted under `config('ai-finops.routes.prefix')` (default `/api/ai-finops`).
-The public `health` probe is open; every other endpoint is wrapped with `auth_middleware`.
+All endpoints are mounted under `config('ai-finops.routes.prefix')` (default `api/ai-finops`, i.e.
+URL path `/api/ai-finops`). The public `health` probe is open; every other endpoint is wrapped with
+`auth_middleware`.
 
 `usage` · `usage/{id}` · `usage/{traceId}/trace` · `pricing/*` · `budgets/*` · `policies/*` ·
 `approvals/*` · `cost-centers` · `chargeback/report` · `routing/*` · `forecast` · `anomalies` ·
