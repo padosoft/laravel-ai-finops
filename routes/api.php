@@ -8,11 +8,17 @@ use Padosoft\LaravelAiFinOps\Http\Controllers\ApprovalController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\AuditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ChargebackController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\CopilotController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\CreditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\FootprintController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\ForecastController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PolicyController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\RoutingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\UsageController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\WhatIfController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +91,42 @@ Route::group([
         Route::put('cost-centers/{id}', [ChargebackController::class, 'update'])->whereNumber('id')->name('ai-finops.cost-centers.update');
         Route::delete('cost-centers/{id}', [ChargebackController::class, 'destroy'])->whereNumber('id')->name('ai-finops.cost-centers.destroy');
         Route::get('chargeback/report', [ChargebackController::class, 'report'])->name('ai-finops.chargeback.report');
+
+        // Cost-aware routing
+        Route::get('routing/rules', [RoutingController::class, 'rules'])->name('ai-finops.routing.rules.index');
+        Route::post('routing/rules', [RoutingController::class, 'storeRule'])->name('ai-finops.routing.rules.store');
+        Route::put('routing/rules/{id}', [RoutingController::class, 'updateRule'])->whereNumber('id')->name('ai-finops.routing.rules.update');
+        Route::delete('routing/rules/{id}', [RoutingController::class, 'destroyRule'])->whereNumber('id')->name('ai-finops.routing.rules.destroy');
+        Route::get('routing/quality-scores', [RoutingController::class, 'qualityScores'])->name('ai-finops.routing.quality-scores');
+        Route::post('routing/simulate', [RoutingController::class, 'simulate'])->name('ai-finops.routing.simulate');
+
+        // Forecast & anomalies
+        Route::get('forecast', [ForecastController::class, 'index'])->name('ai-finops.forecast.index');
+        Route::get('forecast/{id}', [ForecastController::class, 'budget'])->whereNumber('id')->name('ai-finops.forecast.budget');
+        Route::get('anomalies', [ForecastController::class, 'anomalies'])->name('ai-finops.anomalies.index');
+        Route::post('anomalies/ack', [ForecastController::class, 'ackAnomaly'])->name('ai-finops.anomalies.ack');
+
+        // What-if simulator
+        Route::post('whatif/simulate', [WhatIfController::class, 'simulate'])->name('ai-finops.whatif.simulate');
+        Route::get('whatif/scenarios', [WhatIfController::class, 'index'])->name('ai-finops.whatif.scenarios.index');
+        Route::post('whatif/scenarios', [WhatIfController::class, 'store'])->name('ai-finops.whatif.scenarios.store');
+        Route::get('whatif/scenarios/{id}', [WhatIfController::class, 'show'])->whereNumber('id')->name('ai-finops.whatif.scenarios.show');
+
+        // CO2 / ESG footprint
+        Route::get('footprint/summary', [FootprintController::class, 'summary'])->name('ai-finops.footprint.summary');
+        Route::get('footprint/trend', [FootprintController::class, 'trend'])->name('ai-finops.footprint.trend');
+
+        // Credit pools
+        Route::get('credits/pools', [CreditController::class, 'index'])->name('ai-finops.credits.index');
+        Route::post('credits/pools', [CreditController::class, 'store'])->name('ai-finops.credits.store');
+        Route::put('credits/pools/{id}', [CreditController::class, 'update'])->whereNumber('id')->name('ai-finops.credits.update');
+        Route::delete('credits/pools/{id}', [CreditController::class, 'destroy'])->whereNumber('id')->name('ai-finops.credits.destroy');
+        Route::post('credits/pools/{id}/topup', [CreditController::class, 'topup'])->whereNumber('id')->name('ai-finops.credits.topup');
+        Route::get('credits/pools/{id}/ledger', [CreditController::class, 'ledger'])->whereNumber('id')->name('ai-finops.credits.ledger');
+
+        // FinOps copilot
+        Route::post('copilot/query', [CopilotController::class, 'query'])->name('ai-finops.copilot.query');
+        Route::get('copilot/history', [CopilotController::class, 'history'])->name('ai-finops.copilot.history');
 
         // Alerts
         Route::get('alerts/channels', [AlertController::class, 'channels'])->name('ai-finops.alerts.channels.index');

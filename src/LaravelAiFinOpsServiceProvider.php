@@ -14,8 +14,13 @@ use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
+use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
+use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
+use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
+use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
+use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
 use Padosoft\LaravelAiFinOps\Models\Budget;
@@ -27,6 +32,7 @@ use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -39,6 +45,24 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
         $this->app->singleton(PricingRegistry::class);
+
+        // Seam for eval-harness quality scores; host binds a real adapter when wired.
+        $this->app->singleton(
+            QualityScoreProvider::class,
+            NullQualityScoreProvider::class,
+        );
+
+        // Seam for pii-redactor / ai-act-compliance guardrails (toggle gated).
+        $this->app->singleton(
+            GuardrailProvider::class,
+            NullGuardrailProvider::class,
+        );
+
+        // Seam for the FinOps copilot (laravel-ai-chat / AskMyDocs).
+        $this->app->singleton(
+            CopilotProvider::class,
+            NullCopilotProvider::class,
+        );
     }
 
     public function boot(): void
