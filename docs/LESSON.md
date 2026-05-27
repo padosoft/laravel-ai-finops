@@ -65,3 +65,34 @@ Copilot review comments). **Load this before working and pass it to every subage
 - **`updateOrCreate` + `wasRecentlyCreated` for correct 201/200** — when a route uses
   `Model::updateOrCreate`, the response code should reflect whether a record was created (201) or
   updated (200). Use `$model->wasRecentlyCreated ? 201 : 200`.
+
+## 2026-05-27 — M2 review findings
+
+- **Never accept unimplemented `scope_type` values in validation** — `SettingsController` accepted
+  `'feature'` in `Rule::in(...)` but `PolicyEngine::killSwitchReason()` fell through to
+  `default => false` for that type. An operator storing an active `feature` kill switch would believe
+  they're protected while enforcement silently does nothing. Rule: only expose scope types that are
+  actually evaluated by the engine.
+- **Kill-switch scope_id must be validated conditionally** — for `global` scope, `scope_id` must be
+  absent/null (normalise to `null`); for `provider`/`tenant` scopes, `scope_id` is required. Without
+  this, callers can create inert switches that never match.
+- **Narrow broad `Throwable` catches in enforcement paths to `QueryException`** — catching all
+  `Throwable` in `BudgetResolver::applicableTo()` and `PolicyEngine::killSwitchReason()` silently
+  swallows PHP `TypeError`, `Error`, etc. and causes fail-open enforcement. Only real DB errors
+  (transient connectivity) should be swallowed; logic errors should propagate.
+- **`BudgetExceededException` must use a generic HTTP message** — passing the detailed block reason
+  as the `HttpException` message leaks budget names and tenant IDs into HTTP 402 responses. Use a
+  generic "AI spend limit reached" message for the HTTP layer; keep the detailed reason on
+  `$e->blockReason` for internal logging.
+- **M2 hard-budget enforcement is reactive, not prospective** — `PolicyEngine` blocks a call only
+  when `spent >= limit` is ALREADY true. A call that would push spend over the limit is still allowed
+  through; the NEXT call triggers the block. This is the standard approach for pre-flight enforcement
+  without token prediction. Prospective enforcement (block when `spent + estimated_cost >= limit`)
+  requires token counting from the `PromptingAgent` event and is deferred to M3.
+- **N+1 in `BudgetController::index()` + `tree()`** — each budget triggers a `spend()` DB query.
+  Acceptable for M2 with small budget counts; batch-aggregate in M3 when budgets can be numerous.
+- **`unique(['scope_type', 'scope_id'])` with nullable `scope_id` is racy on MySQL/Postgres** —
+  NULL != NULL in unique constraints allows concurrent inserts of two `(global, NULL)` rows. The
+  `updateOrCreate` call mitigates this in normal use but is not atomic. Use a sentinel value (e.g.
+  `''`) for global scope if this becomes an issue, or add a DB-level partial index.
+

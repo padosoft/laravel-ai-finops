@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Padosoft\LaravelAiFinOps\Metering;
 
 use Illuminate\Contracts\Config\Repository as Config;
-use Illuminate\Contracts\Container\Container;
 use Laravel\Ai\Events\AgentPrompted;
 use Laravel\Ai\Events\EmbeddingsGenerated;
 use Laravel\Ai\Responses\AgentResponse;
@@ -19,6 +18,7 @@ use Padosoft\LaravelAiFinOps\Enums\CallStatus;
 use Padosoft\LaravelAiFinOps\Enums\Modality;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Support\TenantResolver;
 
 /**
  * The single metering hook on the laravel/ai lifecycle. Listens to completion
@@ -31,9 +31,9 @@ class MeteringListener
     public function __construct(
         private readonly UsageRecorder $recorder,
         private readonly Config $config,
-        private readonly Container $container,
         private readonly PricingRegistry $pricing,
         private readonly CostCalculator $calculator,
+        private readonly TenantResolver $tenants,
     ) {}
 
     /** Handles AgentPrompted and (via inheritance) AgentStreamed. */
@@ -103,33 +103,8 @@ class MeteringListener
             status: CallStatus::Recorded,
             tokens: $tokens,
             cost: $cost,
-            tenantId: $this->resolveTenant(),
+            tenantId: $this->tenants->resolve(),
             metadata: $price !== null ? ['price_source' => $price->source] : [],
         );
-    }
-
-    private function resolveTenant(): string|int|null
-    {
-        if (! $this->config->get('ai-finops.tenancy.enabled', false)) {
-            return null;
-        }
-
-        $resolver = $this->config->get('ai-finops.tenancy.resolver');
-
-        if ($resolver === null) {
-            return null;
-        }
-
-        if (is_string($resolver) && $this->container->bound($resolver)) {
-            $resolver = $this->container->make($resolver);
-        }
-
-        if (is_callable($resolver)) {
-            $tenant = $resolver();
-
-            return is_string($tenant) || is_int($tenant) ? $tenant : null;
-        }
-
-        return null;
     }
 }

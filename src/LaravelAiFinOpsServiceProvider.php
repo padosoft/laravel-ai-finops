@@ -8,10 +8,15 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Events\AgentPrompted;
 use Laravel\Ai\Events\AgentStreamed;
 use Laravel\Ai\Events\EmbeddingsGenerated;
+use Laravel\Ai\Events\GeneratingEmbeddings;
+use Laravel\Ai\Events\PromptingAgent;
+use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
+use Padosoft\LaravelAiFinOps\Console\ReportCommand;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
+use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 
@@ -45,6 +50,11 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
                     $migrations => $this->app->databasePath('migrations'),
                 ], 'ai-finops-migrations');
             }
+
+            $this->commands([
+                ReportCommand::class,
+                PruneLedgerCommand::class,
+            ]);
         }
 
         if (! config('ai-finops.enabled', true)) {
@@ -53,6 +63,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
 
         $this->bootRoutes();
         $this->bootMeteringHook();
+        $this->bootEnforcementHook();
     }
 
     /**
@@ -79,6 +90,27 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $events->listen(AgentPrompted::class, [MeteringListener::class, 'handleAgentPrompted']);
         $events->listen(AgentStreamed::class, [MeteringListener::class, 'handleAgentPrompted']);
         $events->listen(EmbeddingsGenerated::class, [MeteringListener::class, 'handleEmbeddingsGenerated']);
+    }
+
+    /**
+     * Register pre-flight enforcement on the laravel/ai lifecycle. Kill switches
+     * apply even when budget enforcement is off (the PolicyEngine decides), so this
+     * is registered whenever the hook is active and laravel/ai is present.
+     */
+    private function bootEnforcementHook(): void
+    {
+        if (! config('ai-finops.hook.auto_register', true)) {
+            return;
+        }
+
+        if (! class_exists(PromptingAgent::class)) {
+            return;
+        }
+
+        $events = $this->app['events'];
+
+        $events->listen(PromptingAgent::class, [EnforcementListener::class, 'handlePromptingAgent']);
+        $events->listen(GeneratingEmbeddings::class, [EnforcementListener::class, 'handleGeneratingEmbeddings']);
     }
 
     private function bootRoutes(): void
