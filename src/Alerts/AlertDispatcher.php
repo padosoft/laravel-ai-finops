@@ -33,7 +33,7 @@ class AlertDispatcher
 
         foreach ($rules as $rule) {
             $budget = Budget::query()->find($rule->budget_id);
-            if ($budget === null) {
+            if ($budget === null || ! $budget->enabled) {
                 continue;
             }
 
@@ -57,7 +57,11 @@ class AlertDispatcher
 
     private function fire(AlertRule $rule, $status, float $pct): void
     {
-        $channel = $rule->channel_id ? AlertChannel::query()->find($rule->channel_id) : null;
+        // Only deliver through an ENABLED channel; a disabled channel suppresses
+        // delivery (host receives a null channel) while the crossing is still logged.
+        $channel = $rule->channel_id
+            ? AlertChannel::query()->where('enabled', true)->find($rule->channel_id)
+            : null;
 
         AlertLogEntry::create([
             'rule_id' => $rule->id,

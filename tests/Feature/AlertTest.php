@@ -11,6 +11,7 @@ use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Data\TokenUsage;
 use Padosoft\LaravelAiFinOps\Events\BudgetThresholdReached;
+use Padosoft\LaravelAiFinOps\Models\AlertChannel;
 use Padosoft\LaravelAiFinOps\Models\AlertLogEntry;
 use Padosoft\LaravelAiFinOps\Models\AlertRule;
 use Padosoft\LaravelAiFinOps\Models\Budget;
@@ -65,5 +66,29 @@ class AlertTest extends TestCase
 
         $this->artisan('ai-finops:check-alerts')->assertSuccessful();
         $this->assertSame(1, AlertLogEntry::query()->count());
+    }
+
+    public function test_disabled_budget_does_not_alert(): void
+    {
+        $budget = $this->budgetAt(10.0, 9.0);
+        $budget->update(['enabled' => false]);
+        AlertRule::create(['name' => '80%', 'budget_id' => $budget->id, 'threshold_pct' => 80]);
+
+        $this->assertSame(0, $this->app->make(AlertDispatcher::class)->evaluate());
+        $this->assertSame(0, AlertLogEntry::query()->count());
+    }
+
+    public function test_disabled_channel_suppresses_delivery_but_still_logs(): void
+    {
+        Event::fake([BudgetThresholdReached::class]);
+
+        $budget = $this->budgetAt(10.0, 9.0);
+        $channel = AlertChannel::create(['type' => 'webhook', 'name' => 'Ops', 'enabled' => false]);
+        AlertRule::create(['name' => '80%', 'budget_id' => $budget->id, 'threshold_pct' => 80, 'channel_id' => $channel->id]);
+
+        $this->app->make(AlertDispatcher::class)->evaluate();
+
+        $this->assertSame(1, AlertLogEntry::query()->count());
+        Event::assertDispatched(BudgetThresholdReached::class, fn ($e) => $e->channel === null);
     }
 }
