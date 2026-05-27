@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Padosoft\LaravelAiFinOps\Http\Controllers\AlertController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\ApprovalController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\AuditController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
@@ -84,6 +85,18 @@ Route::group([
         Route::put('cost-centers/{id}', [ChargebackController::class, 'update'])->whereNumber('id')->name('ai-finops.cost-centers.update');
         Route::delete('cost-centers/{id}', [ChargebackController::class, 'destroy'])->whereNumber('id')->name('ai-finops.cost-centers.destroy');
         Route::get('chargeback/report', [ChargebackController::class, 'report'])->name('ai-finops.chargeback.report');
+
+        // Alerts
+        Route::get('alerts/channels', [AlertController::class, 'channels'])->name('ai-finops.alerts.channels.index');
+        Route::post('alerts/channels', [AlertController::class, 'storeChannel'])->name('ai-finops.alerts.channels.store');
+        Route::put('alerts/channels/{id}', [AlertController::class, 'updateChannel'])->whereNumber('id')->name('ai-finops.alerts.channels.update');
+        Route::delete('alerts/channels/{id}', [AlertController::class, 'destroyChannel'])->whereNumber('id')->name('ai-finops.alerts.channels.destroy');
+        Route::post('alerts/channels/{id}/test', [AlertController::class, 'testChannel'])->whereNumber('id')->name('ai-finops.alerts.channels.test');
+        Route::get('alerts/rules', [AlertController::class, 'rules'])->name('ai-finops.alerts.rules.index');
+        Route::post('alerts/rules', [AlertController::class, 'storeRule'])->name('ai-finops.alerts.rules.store');
+        Route::put('alerts/rules/{id}', [AlertController::class, 'updateRule'])->whereNumber('id')->name('ai-finops.alerts.rules.update');
+        Route::delete('alerts/rules/{id}', [AlertController::class, 'destroyRule'])->whereNumber('id')->name('ai-finops.alerts.rules.destroy');
+        Route::get('alerts/log', [AlertController::class, 'log'])->name('ai-finops.alerts.log');
 
         // Audit trail
         Route::get('audit', [AuditController::class, 'index'])->name('ai-finops.audit.index');
