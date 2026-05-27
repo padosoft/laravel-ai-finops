@@ -71,22 +71,33 @@ class WhatIfController
         $targetPrice = $pricing->priceFor($data['to_model'], $data['provider'] ?? null);
         $currency = (string) config('ai-finops.currency.base', 'USD');
 
-        $rows = UsageRecord::query()
+        $query = UsageRecord::query()
             ->where('model', $data['from_model'])
-            ->where('created_at', '>=', $since)
-            ->get(['tokens_input', 'tokens_output', 'tokens_cached', 'tokens_reasoning', 'cost_total']);
+            ->where('created_at', '>=', $since);
 
+        // The same model name can exist across providers; scope when one is given
+        // so calls/savings don't mix unrelated traffic.
+        if (! empty($data['provider'])) {
+            $query->where('provider', $data['provider']);
+        }
+
+        $rows = $query->get(['tokens_input', 'tokens_output', 'tokens_cached', 'tokens_reasoning', 'cost_total']);
+
+        $priced = $targetPrice !== null;
         $current = 0.0;
         $projected = 0.0;
 
         foreach ($rows as $row) {
             $current += (float) $row->cost_total;
-            $projected += $calculator->cost(new TokenUsage(
-                input: (int) $row->tokens_input,
-                output: (int) $row->tokens_output,
-                cached: (int) $row->tokens_cached,
-                reasoning: (int) $row->tokens_reasoning,
-            ), $targetPrice, $currency)->total;
+
+            if ($priced) {
+                $projected += $calculator->cost(new TokenUsage(
+                    input: (int) $row->tokens_input,
+                    output: (int) $row->tokens_output,
+                    cached: (int) $row->tokens_cached,
+                    reasoning: (int) $row->tokens_reasoning,
+                ), $targetPrice, $currency)->total;
+            }
         }
 
         return [
@@ -94,9 +105,11 @@ class WhatIfController
             'to_model' => $data['to_model'],
             'calls' => $rows->count(),
             'current_cost' => round($current, 6),
-            'projected_cost' => round($projected, 6),
-            'savings' => round($current - $projected, 6),
-            'priced' => $targetPrice !== null,
+            // Don't fabricate "100% savings" for a target model we can't price.
+            'projected_cost' => $priced ? round($projected, 6) : null,
+            'savings' => $priced ? round($current - $projected, 6) : null,
+            'priced' => $priced,
+            'message' => $priced ? null : "No pricing for '{$data['to_model']}' — sync pricing or add an override.",
             'currency' => $currency,
         ];
     }

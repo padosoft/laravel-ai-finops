@@ -32,6 +32,7 @@ class FootprintController
 
     public function trend(Request $request): JsonResponse
     {
+        $request->validate(['from' => ['sometimes', 'date']]);
         $from = $request->filled('from') ? $request->date('from') : now()->subDays(30);
 
         $rows = UsageRecord::query()

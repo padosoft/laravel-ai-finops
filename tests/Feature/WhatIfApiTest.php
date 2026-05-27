@@ -51,6 +51,19 @@ class WhatIfApiTest extends TestCase
         $this->assertGreaterThan(0, $res->json('savings'));
     }
 
+    public function test_unpriced_target_does_not_fabricate_savings(): void
+    {
+        $this->seedRow();
+
+        $this->postJson('/api/ai-finops/whatif/simulate', [
+            'from_model' => 'gpt-5.1', 'to_model' => 'unknown-model',
+        ])
+            ->assertOk()
+            ->assertJsonPath('priced', false)
+            ->assertJsonPath('projected_cost', null)
+            ->assertJsonPath('savings', null);
+    }
+
     public function test_scenario_store_and_list(): void
     {
         $this->seedRow();
