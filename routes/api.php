@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Padosoft\LaravelAiFinOps\Http\Controllers\BudgetController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\DashboardController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\UsageController;
@@ -41,6 +42,15 @@ Route::group([
         Route::post('pricing/overrides', [PricingController::class, 'storeOverride'])->name('ai-finops.pricing.overrides.store');
         Route::put('pricing/overrides/{id}', [PricingController::class, 'updateOverride'])->whereNumber('id')->name('ai-finops.pricing.overrides.update');
         Route::delete('pricing/overrides/{id}', [PricingController::class, 'destroyOverride'])->whereNumber('id')->name('ai-finops.pricing.overrides.destroy');
+
+        // Budgets
+        Route::get('budgets/tree', [BudgetController::class, 'tree'])->name('ai-finops.budgets.tree');
+        Route::get('budgets', [BudgetController::class, 'index'])->name('ai-finops.budgets.index');
+        Route::post('budgets', [BudgetController::class, 'store'])->name('ai-finops.budgets.store');
+        Route::get('budgets/{id}', [BudgetController::class, 'show'])->whereNumber('id')->name('ai-finops.budgets.show');
+        Route::put('budgets/{id}', [BudgetController::class, 'update'])->whereNumber('id')->name('ai-finops.budgets.update');
+        Route::delete('budgets/{id}', [BudgetController::class, 'destroy'])->whereNumber('id')->name('ai-finops.budgets.destroy');
+        Route::get('budgets/{id}/burndown', [BudgetController::class, 'burndown'])->whereNumber('id')->name('ai-finops.budgets.burndown');
 
         // Dashboard / KPIs
         Route::get('dashboard/kpis', [DashboardController::class, 'kpis'])->name('ai-finops.dashboard.kpis');
