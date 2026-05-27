@@ -41,8 +41,8 @@ class DashboardController
 
         $rows = UsageRecord::query()
             ->where('created_at', '>=', $from)
-            ->groupBy('day')
-            ->orderBy('day')
+            ->groupByRaw('DATE(created_at)')
+            ->orderByRaw('DATE(created_at)')
             ->get([
                 DB::raw('DATE(created_at) as day'),
                 DB::raw('SUM(cost_total) as cost'),

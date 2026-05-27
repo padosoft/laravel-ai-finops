@@ -18,12 +18,12 @@ class UsageController
 
         foreach (['provider', 'model', 'status', 'tenant_id', 'cost_center', 'purpose_tag'] as $field) {
             if ($request->filled($field)) {
-                $query->where($field, $request->string($field));
+                $query->where($field, (string) $request->input($field));
             }
         }
 
         if ($request->filled('trace_id')) {
-            $query->where('trace_id', $request->string('trace_id'));
+            $query->where('trace_id', (string) $request->input('trace_id'));
         }
 
         if ($request->filled('from')) {

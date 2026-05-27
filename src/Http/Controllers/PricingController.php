@@ -104,7 +104,9 @@ class PricingController
             'output_cost_per_token' => ['required', 'numeric', 'min:0'],
             'cache_read_cost_per_token' => ['nullable', 'numeric', 'min:0'],
             'cache_write_cost_per_token' => ['nullable', 'numeric', 'min:0'],
-            'currency' => ['nullable', 'string', 'size:3'],
+            // `sometimes` (not nullable): the column is non-null with a default, so
+            // omit it when absent rather than persisting NULL.
+            'currency' => ['sometimes', 'string', 'size:3'],
         ]);
     }
 }

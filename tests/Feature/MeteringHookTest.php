@@ -67,6 +67,19 @@ class MeteringHookTest extends TestCase
         $this->assertSame(0, $row->tokens_output);
     }
 
+    public function test_embeddings_without_provider_meta_falls_back_to_unknown(): void
+    {
+        $listener = $this->app->make(MeteringListener::class);
+
+        $response = new EmbeddingsResponse([[0.1]], 10, new Meta(model: 'text-embedding-3-large'));
+        $listener->recordEmbeddings('inv-emb', $response, 'text-embedding-3-large');
+
+        $row = UsageRecord::query()->where('trace_id', 'inv-emb')->firstOrFail();
+
+        $this->assertSame('unknown', $row->provider);
+        $this->assertSame('text-embedding-3-large', $row->model);
+    }
+
     public function test_metering_no_ops_when_disabled(): void
     {
         config(['ai-finops.metering' => false]);

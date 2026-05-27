@@ -22,9 +22,9 @@ use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 
 /**
  * The single metering hook on the laravel/ai lifecycle. Listens to completion
- * events, maps them to an AiCallEnvelope, and records them. Cost is left at zero
- * here; the CostCalculator fills it in (M1.4). Provider-agnostic: any laravel/ai
- * provider (incl. padosoft/laravel-ai-regolo) flows through these events.
+ * events, maps them to an AiCallEnvelope, prices them via the PricingRegistry +
+ * CostCalculator, and records them. Provider-agnostic: any laravel/ai provider
+ * (incl. padosoft/laravel-ai-regolo) flows through these events.
  */
 class MeteringListener
 {
@@ -64,7 +64,7 @@ class MeteringListener
     {
         $envelope = $this->baseEnvelope(
             traceId: $invocationId,
-            provider: $response->meta->provider ?? $fallbackModel,
+            provider: $response->meta->provider ?? 'unknown',
             model: $response->meta->model ?? $fallbackModel,
             modality: Modality::Embedding,
             tokens: new TokenUsage(input: $response->tokens),

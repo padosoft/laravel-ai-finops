@@ -26,6 +26,10 @@ class LiteLLMPricingSource implements PricingSource
 
     public function all(): array
     {
+        if (! $this->enabled()) {
+            return [];
+        }
+
         $cached = $this->cache->get(self::CACHE_KEY);
 
         if (is_array($cached)) {
@@ -41,6 +45,10 @@ class LiteLLMPricingSource implements PricingSource
 
     public function sync(): int
     {
+        if (! $this->enabled()) {
+            return 0;
+        }
+
         $url = (string) $this->config->get(
             'ai-finops.pricing.litellm.url',
             'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'
@@ -73,5 +81,10 @@ class LiteLLMPricingSource implements PricingSource
     public function name(): string
     {
         return 'litellm';
+    }
+
+    private function enabled(): bool
+    {
+        return (bool) $this->config->get('ai-finops.pricing.litellm.enabled', true);
     }
 }
