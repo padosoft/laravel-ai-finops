@@ -66,6 +66,19 @@ Copilot review comments). **Load this before working and pass it to every subage
   `Model::updateOrCreate`, the response code should reflect whether a record was created (201) or
   updated (200). Use `$model->wasRecentlyCreated ? 201 : 200`.
 
+## 2026-05-31 — M8 multi-source pricing
+
+- **Run tests with `php vendor/bin/phpunit` from PowerShell**, NOT the bare `vendor/bin/phpunit`
+  shim under the Bash tool — its `#!/usr/bin/env php` shebang fails with `'php': No such file or
+  directory` because `php` is not on the git-bash PATH on this Windows host (it IS on the PowerShell
+  PATH). PHP 8.4.21, PHPUnit 12.5.27. Baseline before M8 = 117 tests green.
+- **M8 design = `docs/superpowers/specs/2026-05-31-multi-source-pricing-design.md`** + plan
+  `docs/superpowers/plans/2026-05-31-multi-source-pricing.md`. Key facts from live research:
+  neither LiteLLM nor OpenRouter timestamps individual prices (freshness = OUR per-source sync time);
+  OpenRouter has NO inference markup (pass-through; ~5.5% credit-funding fee → model as overlay only);
+  real cost = who actually billed you (provider_source_map); regolo.ai has NO price API → manual source
+  (EUR, per-1M). OpenRouter price varies 3–10× by upstream endpoint (endpoint ingestion deferred Ph2).
+
 ## 2026-05-27 — M2 review findings
 
 - **Never accept unimplemented `scope_type` values in validation** — `SettingsController` accepted
