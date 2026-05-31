@@ -82,3 +82,20 @@ These recurred across M0–M7; treat them as standing rules:
   sensitive keys.
 - **Sibling‑package integrations are Option‑1 seams** (contract + toggle + Null default), never hard
   composer deps.
+
+### Multi‑source pricing (M8)
+
+- **Add a feed = implement `PricingSource`** (`all/sync/name/syncedAt`) and register it in the
+  `PricingSourceManager` map in the service provider + add its name to `config pricing.sources`.
+  `syncedAt()` is the ONLY freshness signal (feeds don't date prices) — stamp it on successful sync.
+- **Resolution order is fixed:** manual DB override (wins when `overrides_win`) → `provider_source_map`
+  (who bills you) → freshest `syncedAt()` → `default_winner` tie‑break. The `manual` source resolves
+  through the currency‑aware override lookup (EUR‑safe), never `ModelPrice::fromLiteLLM` (USD‑hardcoded).
+- **The raw ledger is pass‑through truth.** Subscription coverage zeroes cost in `MeteringListener`
+  (`CallStatus::Covered` + `covered_by`, tokens kept, would‑be rate in `metadata.rate_*`); the
+  overhead % (`CostCalculator::withOverhead`) is for estimates ONLY. Never mutate metered rows for fees.
+- **Feed‑less providers (e.g. regolo.ai) = manual source**, entered per‑1M / EUR via `pricing/overrides`
+  (`unit`, `currency`). Subscriptions/canoni are `pricing/subscription-windows` CRUD.
+- **OpenRouter key is a secret:** expose `has_openrouter_key` only; keyless public list works via
+  `allow_keyless`.
+- **Tests:** wrap fakes in `PricingSourceManager`; `RefreshDatabase` for any DB write; keep hermetic.

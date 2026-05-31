@@ -22,7 +22,12 @@ For each subtask:
 7. Update `docs/PROGRESS.md` (resume point) and `docs/LESSON.md` (any discovery, incl. Copilot lessons).
 
 Key facts: backbone `laravel/ai`; metering = single middleware/listener; `AiCallEnvelope` + `trace-id`
-glue; pricing = LiteLLM base ⊕ Padosoft override (override wins); admin = React+Vite+Tailwind; secrets
-never exposed. `laravel-ai-chat` is demo-only; `agentic-qa-kit` is an external Bun/TS QA runner.
+glue; pricing = **multi-source** (LiteLLM ⊕ OpenRouter live ⊕ manual/regolo) behind `PricingSourceManager`,
+resolved override → `provider_source_map` → freshest `syncedAt()` → `default_winner`; flat-rate
+**subscription windows** zero covered calls; `markup_pct` overhead is estimate-only; raw ledger is
+pass-through truth. admin = React+Vite+Tailwind; secrets never exposed (`has_openrouter_key`).
+`laravel-ai-chat` is demo-only; `agentic-qa-kit` is an external Bun/TS QA runner.
+Tests: wrap fakes in `PricingSourceManager`; `RefreshDatabase` for DB writes; run `php vendor/bin/phpunit`
+from PowerShell (the bash shim can't find php).
 
 At package completion: WOW README, consolidate LESSON.md into rules/skills/AGENTS.md, tag `vX.X.X` + release.
