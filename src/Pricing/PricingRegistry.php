@@ -10,8 +10,13 @@ use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Throwable;
 
 /**
- * Resolves the effective price for a model: the LiteLLM mirror is the base, and a
- * local Padosoft override (DB) WINS when present (config pricing.overrides_win).
+ * Resolves the effective price for a model across multiple feeds:
+ *   1. a local Padosoft DB override (the `manual` source) WINS when present and
+ *      `pricing.overrides_win` is true;
+ *   2. otherwise `pricing.provider_source_map` picks the authoritative source for
+ *      the call's provider ("who actually bills you");
+ *   3. otherwise the enabled source with the freshest `syncedAt()` wins, ties
+ *      broken by `pricing.default_winner` order.
  * Per-request memoization avoids repeated source/DB hits inside a single process.
  */
 class PricingRegistry
@@ -20,7 +25,7 @@ class PricingRegistry
     private array $memo = [];
 
     public function __construct(
-        private readonly PricingSource $source,
+        private readonly PricingSourceManager $manager,
         private readonly Config $config,
     ) {}
 
@@ -33,7 +38,7 @@ class PricingRegistry
         }
 
         $override = $this->override($model, $provider);
-        $base = $this->fromSource($model);
+        $base = $this->resolveFromSources($model, $provider);
 
         $overridesWin = (bool) $this->config->get('ai-finops.pricing.overrides_win', true);
 
@@ -50,7 +55,7 @@ class PricingRegistry
     {
         $this->memo = [];
 
-        return $this->source->sync();
+        return array_sum($this->manager->syncAll());
     }
 
     private function override(string $model, ?string $provider): ?ModelPrice
@@ -68,14 +73,83 @@ class PricingRegistry
         return $row?->toModelPrice();
     }
 
-    private function fromSource(string $model): ?ModelPrice
+    /**
+     * Resolve a base price from the feed sources: provider_source_map first, then
+     * freshest-synced among enabled feeds, ties broken by default_winner order.
+     */
+    private function resolveFromSources(string $model, ?string $provider): ?ModelPrice
     {
-        $all = $this->source->all();
+        $map = (array) $this->config->get('ai-finops.pricing.provider_source_map', []);
+
+        if ($provider !== null && isset($map[$provider])) {
+            $name = (string) $map[$provider];
+
+            // 'manual' resolves through the currency-aware override lookup.
+            if ($name === 'manual') {
+                return $this->override($model, $provider);
+            }
+
+            $source = $this->manager->source($name);
+
+            return $source !== null ? $this->fromFeed($source, $model) : null;
+        }
+
+        $winnerOrder = array_flip(array_values((array) $this->config->get('ai-finops.pricing.default_winner', [])));
+
+        $best = null;
+        $bestAt = null;
+        $bestRank = PHP_INT_MAX;
+
+        foreach ($this->manager->sources() as $source) {
+            if ($source->name() === 'manual') {
+                continue; // manual = override, already handled by precedence/map
+            }
+
+            $all = $source->all();
+            if (! isset($all[$model]) || ! is_array($all[$model])) {
+                continue;
+            }
+
+            $at = $source->syncedAt();
+            $rank = $winnerOrder[$source->name()] ?? PHP_INT_MAX;
+
+            if ($this->isFresher($at, $rank, $bestAt, $bestRank)) {
+                $best = $source;
+                $bestAt = $at;
+                $bestRank = $rank;
+            }
+        }
+
+        return $best !== null ? $this->fromFeed($best, $model) : null;
+    }
+
+    private function fromFeed(PricingSource $source, string $model): ?ModelPrice
+    {
+        $all = $source->all();
 
         if (! isset($all[$model]) || ! is_array($all[$model])) {
             return null;
         }
 
-        return ModelPrice::fromLiteLLM($model, $all[$model], $this->source->name());
+        return ModelPrice::fromLiteLLM($model, $all[$model], $source->name(), $source->syncedAt());
+    }
+
+    /** A later sync wins; equal/unknown freshness falls back to default_winner rank. */
+    private function isFresher(?\DateTimeInterface $at, int $rank, ?\DateTimeInterface $bestAt, int $bestRank): bool
+    {
+        if ($at === null && $bestAt === null) {
+            return $rank < $bestRank;
+        }
+        if ($at === null) {
+            return false;
+        }
+        if ($bestAt === null) {
+            return true;
+        }
+        if ($at->getTimestamp() === $bestAt->getTimestamp()) {
+            return $rank < $bestRank;
+        }
+
+        return $at->getTimestamp() > $bestAt->getTimestamp();
     }
 }

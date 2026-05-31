@@ -9,6 +9,7 @@ use Padosoft\LaravelAiFinOps\Models\PriceWatchSubscription;
 use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\PriceWatch\PriceWatchService;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Tests\Support\ArrayPricingSource;
 use Padosoft\LaravelAiFinOps\Tests\TestCase;
 
@@ -23,7 +24,7 @@ class PriceWatchTest extends TestCase
             'gpt-x' => ['input_cost_per_token' => 0.000002, 'output_cost_per_token' => 0.000008],
         ]);
 
-        return new PriceWatchService(new PricingRegistry($source, $this->app['config']));
+        return new PriceWatchService(new PricingRegistry(new PricingSourceManager(['litellm' => $source], $this->app['config']), $this->app['config']));
     }
 
     public function test_capture_then_change_is_detected(): void
