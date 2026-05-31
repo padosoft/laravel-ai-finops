@@ -37,12 +37,16 @@ class PricingOverride extends Model
 
     public function toModelPrice(): ModelPrice
     {
+        // Operators may enter feed-less prices per-million (e.g. regolo.ai, EUR);
+        // normalize to the per-single-token contract used everywhere downstream.
+        $divisor = $this->unit === 'per_million' ? 1_000_000.0 : 1.0;
+
         return new ModelPrice(
             model: $this->model,
-            inputPerToken: (float) $this->input_cost_per_token,
-            outputPerToken: (float) $this->output_cost_per_token,
-            cacheReadPerToken: $this->cache_read_cost_per_token !== null ? (float) $this->cache_read_cost_per_token : null,
-            cacheWritePerToken: $this->cache_write_cost_per_token !== null ? (float) $this->cache_write_cost_per_token : null,
+            inputPerToken: (float) $this->input_cost_per_token / $divisor,
+            outputPerToken: (float) $this->output_cost_per_token / $divisor,
+            cacheReadPerToken: $this->cache_read_cost_per_token !== null ? (float) $this->cache_read_cost_per_token / $divisor : null,
+            cacheWritePerToken: $this->cache_write_cost_per_token !== null ? (float) $this->cache_write_cost_per_token / $divisor : null,
             currency: (string) $this->currency,
             provider: $this->provider,
             source: 'override',
