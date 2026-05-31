@@ -91,12 +91,15 @@ class WhatIfController
             $current += (float) $row->cost_total;
 
             if ($priced) {
-                $projected += $calculator->cost(new TokenUsage(
+                $rowCost = $calculator->cost(new TokenUsage(
                     input: (int) $row->tokens_input,
                     output: (int) $row->tokens_output,
                     cached: (int) $row->tokens_cached,
                     reasoning: (int) $row->tokens_reasoning,
                 ), $targetPrice, $currency)->total;
+
+                // Estimate path: fold in the target provider's account-level overhead.
+                $projected += $calculator->withOverhead($rowCost, $data['provider'] ?? null);
             }
         }
 
