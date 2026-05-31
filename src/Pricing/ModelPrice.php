@@ -20,14 +20,19 @@ final readonly class ModelPrice
         public string $currency = 'USD',
         public ?string $provider = null,
         public string $source = 'litellm',
+        // Provenance: our last successful sync of the winning source (freshness
+        // signal) and, when routed via a gateway, the real upstream provider.
+        public ?\DateTimeInterface $syncedAt = null,
+        public ?string $upstreamProvider = null,
     ) {}
 
     /**
-     * Build from a LiteLLM-style attribute map.
+     * Build from a LiteLLM-style attribute map. OpenRouter responses are normalized
+     * into the same shape upstream, so this also serves the OpenRouter source.
      *
      * @param  array<string,mixed>  $attr
      */
-    public static function fromLiteLLM(string $model, array $attr, string $source = 'litellm'): self
+    public static function fromLiteLLM(string $model, array $attr, string $source = 'litellm', ?\DateTimeInterface $syncedAt = null): self
     {
         return new self(
             model: $model,
@@ -38,6 +43,7 @@ final readonly class ModelPrice
             currency: 'USD',
             provider: $attr['litellm_provider'] ?? null,
             source: $source,
+            syncedAt: $syncedAt,
         );
     }
 }

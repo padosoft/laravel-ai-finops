@@ -11,8 +11,14 @@ class ArrayPricingSource implements PricingSource
 {
     public int $syncs = 0;
 
-    /** @param array<string,array<string,mixed>> $models */
-    public function __construct(private array $models = []) {}
+    /**
+     * @param  array<string,array<string,mixed>>  $models
+     */
+    public function __construct(
+        private array $models = [],
+        private string $name = 'litellm',
+        private ?\DateTimeInterface $syncedAt = null,
+    ) {}
 
     public function all(): array
     {
@@ -28,6 +34,11 @@ class ArrayPricingSource implements PricingSource
 
     public function name(): string
     {
-        return 'litellm';
+        return $this->name;
+    }
+
+    public function syncedAt(): ?\DateTimeInterface
+    {
+        return $this->syncedAt;
     }
 }

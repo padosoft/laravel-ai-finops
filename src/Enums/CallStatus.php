@@ -17,4 +17,11 @@ enum CallStatus: string
 
     /** The provider call failed; partial/zero usage may apply. */
     case Failed = 'failed';
+
+    /**
+     * The call fell within an active flat-rate subscription window (e.g. Claude
+     * Max) — tokens are recorded for visibility, but cost is zero because the
+     * subscription already paid for it.
+     */
+    case Covered = 'covered';
 }

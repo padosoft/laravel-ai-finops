@@ -42,8 +42,16 @@ Most tools either **track** cost or **block** it. This package does both, and go
 - 🎯 **One hook, every provider.** A single listener on the `laravel/ai` lifecycle meters OpenAI,
   Anthropic, Gemini, Mistral, DeepSeek, xAI, Bedrock, Azure, **and `padosoft/laravel-ai-regolo`** —
   no per‑provider wiring.
-- 💸 **Always‑fresh pricing.** LiteLLM's 2,600+ model price DB as the base, **⊕ your local
-  overrides that win** — never ship stale hard‑coded prices again.
+- 💸 **Always‑fresh, multi‑source pricing.** LiteLLM's 2,600+ model price DB **⊕ OpenRouter's live
+  models API ⊕ your local manual prices** (for feed‑less providers like **regolo.ai** — EUR / per‑1M
+  entry). A per‑provider authority map picks *who actually bills you*; unmapped providers fall back
+  to the **freshest‑synced** feed (env‑configurable tie‑break). Manual overrides always win. Never
+  ship stale hard‑coded prices again.
+- 🧾 **Flat‑rate subscription coverage.** Pay a monthly plan (Claude Max, OpenAI Pro…)? Define a
+  `[from, to]` window per provider and calls are metered at **€0** while covered (tokens still
+  tracked); routing prefers covered providers to "stay within the plan", and you shorten the window
+  the moment the provider says the quota is spent. Plus an optional per‑provider overhead % (e.g.
+  OpenRouter's ~5.5% credit fee) folded into estimates — the raw ledger stays pass‑through.
 - 🧱 **N‑scope budgets** (global → tenant → user → cost‑center → provider → model → agent → purpose) ×
   periods (daily…yearly + rolling), with soft/hard limits. A hard budget blocks further calls with
   HTTP **402**; pass a pre‑flight cost estimate (or use `diagnostics/estimate`) to also block the
@@ -109,8 +117,9 @@ cost, currency, tenant, cost‑center, agent step, purpose, `trace‑id`). It fl
 
 1. **Pre‑flight** — estimate + `PolicyEngine` → `allow | block | throttle | downgrade | queue |
    require‑approval` (kill switches, guardrails, hard budgets, declarative policies).
-2. **Post‑flight** — real usage → `CostCalculator` (LiteLLM ⊕ overrides) → append‑only **ledger** →
-   budgets, forecasts and alerts update.
+2. **Post‑flight** — real usage → `CostCalculator` (multi‑source pricing ⊕ overrides ⊕ subscription
+   coverage) → append‑only **ledger** (with frozen price provenance: source, exact rates, upstream
+   provider) → budgets, forecasts and alerts update.
 
 The envelope is also the **cross‑package contract**: any Padosoft package can populate its context
 tags so FinOps attributes and governs spend consistently.
@@ -122,7 +131,8 @@ tags so FinOps attributes and governs spend consistently.
 | Area | What you get |
 |------|--------------|
 | Metering | Single `laravel/ai` hook; immutable usage ledger; multimodal token tracking |
-| Pricing | LiteLLM mirror + local overrides (override wins); cache/discount aware |
+| Pricing | Multi‑source: LiteLLM ⊕ OpenRouter (live) ⊕ manual (regolo, EUR/per‑1M); per‑provider authority map → freshest‑sync → env tie‑break; overrides win; cache/discount aware |
+| Subscriptions | Flat‑rate coverage windows → covered calls cost €0 (tokens tracked); per‑provider overhead % for estimates |
 | Budgets | N‑scope hierarchy × periods; soft/hard; burndown; in‑flight enforcement |
 | Policies | DSL (scope + min‑cost + model) → block/approval/downgrade/throttle/queue; simulate |
 | Approvals | Pending → approve/reject workflow |

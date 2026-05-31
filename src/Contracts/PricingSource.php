@@ -21,4 +21,11 @@ interface PricingSource
 
     /** Identifier used as the price `source` provenance. */
     public function name(): string;
+
+    /**
+     * When this source was last successfully synced (our ingestion time). Neither
+     * LiteLLM nor OpenRouter timestamp individual prices, so this is the only
+     * freshness signal the resolver can use. Null until a successful sync.
+     */
+    public function syncedAt(): ?\DateTimeInterface;
 }

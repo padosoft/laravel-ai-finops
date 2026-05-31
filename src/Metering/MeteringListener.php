@@ -13,10 +13,13 @@ use Laravel\Ai\Responses\EmbeddingsResponse;
 use Laravel\Ai\Responses\StreamedAgentResponse;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
+use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Data\TokenUsage;
 use Padosoft\LaravelAiFinOps\Enums\CallStatus;
 use Padosoft\LaravelAiFinOps\Enums\Modality;
+use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
+use Padosoft\LaravelAiFinOps\Pricing\ModelPrice;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Support\TenantResolver;
 use Padosoft\LaravelAiFinOps\Support\TraceContext;
@@ -96,6 +99,20 @@ class MeteringListener
 
         $price = $this->pricing->priceFor($model, $provider);
         $cost = $this->calculator->cost($tokens, $price, $currency);
+        $tenantId = $this->trace->tenantId() ?? $this->tenants->resolve();
+
+        $metadata = $this->provenance($price);
+        $status = CallStatus::Recorded;
+
+        // Flat-rate subscription coverage: within an active window the call is free
+        // (the subscription already paid). Tokens are still recorded for visibility;
+        // the would-be price stays in metadata so per-model "value consumed" is kept.
+        $covered = $this->activeSubscription($provider, $tenantId, $model);
+        if ($covered !== null) {
+            $metadata['covered_by'] = $covered->label;
+            $cost = CostBreakdown::zero($currency);
+            $status = CallStatus::Covered;
+        }
 
         return new AiCallEnvelope(
             // Ambient TraceContext (e.g. set by laravel-flow per step) overrides the
@@ -104,14 +121,50 @@ class MeteringListener
             provider: $provider,
             model: $model,
             modality: $modality,
-            status: CallStatus::Recorded,
+            status: $status,
             tokens: $tokens,
             cost: $cost,
             agentStep: $this->trace->agentStep(),
             purposeTag: $this->trace->purposeTag(),
-            tenantId: $this->trace->tenantId() ?? $this->tenants->resolve(),
+            tenantId: $tenantId,
             costCenter: $this->trace->costCenter(),
-            metadata: $price !== null ? ['price_source' => $price->source] : [],
+            metadata: $metadata,
         );
+    }
+
+    /**
+     * Freeze price provenance onto the ledger row (immutable past truth): which
+     * source won, the exact per-token rates applied, the source's sync time, and
+     * the real upstream provider when the call was routed via a gateway.
+     *
+     * @return array<string,mixed>
+     */
+    private function provenance(?ModelPrice $price): array
+    {
+        if ($price === null) {
+            return [];
+        }
+
+        return array_filter([
+            'price_source' => $price->source,
+            'rate_input' => $price->inputPerToken,
+            'rate_output' => $price->outputPerToken,
+            'source_synced_at' => $price->syncedAt?->format(\DateTimeInterface::ATOM),
+            'upstream_provider' => $price->upstreamProvider,
+        ], static fn ($value) => $value !== null);
+    }
+
+    private function activeSubscription(string $provider, string|int|null $tenant, string $model): ?SubscriptionWindow
+    {
+        try {
+            return SubscriptionWindow::activeFor(
+                $provider,
+                $tenant === null ? null : (string) $tenant,
+                $model,
+                now(),
+            );
+        } catch (\Throwable) {
+            return null; // table not migrated yet / DB unavailable — never break metering
+        }
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Padosoft\LaravelAiFinOps\Routing;
 
 use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
+use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 
 /**
@@ -35,11 +36,19 @@ class RoutingEngine
 
             $eligible = $minQuality === null || $score === null || $score >= $minQuality;
 
+            // Within an active flat-rate subscription the call is effectively free,
+            // so routing should prefer covered providers ("stay within the plan").
+            $covered = $costMetric !== null && $this->isCovered($provider, $model);
+            if ($covered) {
+                $costMetric = 0.0;
+            }
+
             $evaluated[] = [
                 'model' => $model,
                 'cost_metric' => $costMetric,
                 'quality' => $score,
                 'eligible' => $eligible,
+                'covered' => $covered,
             ];
         }
 
@@ -52,5 +61,18 @@ class RoutingEngine
             'min_quality' => $minQuality,
             'candidates' => $evaluated,
         ];
+    }
+
+    private function isCovered(?string $provider, string $model): bool
+    {
+        if ($provider === null) {
+            return false;
+        }
+
+        try {
+            return SubscriptionWindow::activeFor($provider, null, $model, now()) !== null;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

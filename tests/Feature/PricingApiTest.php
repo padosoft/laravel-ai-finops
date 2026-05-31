@@ -48,6 +48,46 @@ class PricingApiTest extends TestCase
             ->assertJsonPath('models', 2);
     }
 
+    public function test_sync_status_reports_per_source_and_has_key_boolean(): void
+    {
+        config(['ai-finops.pricing.openrouter.key' => 'sk-secret']);
+
+        $response = $this->getJson('/api/ai-finops/pricing/sync/status')
+            ->assertOk()
+            ->assertJsonPath('has_openrouter_key', true)
+            ->assertJsonPath('sources.0.name', 'litellm');
+
+        // The key value must never leak into the payload.
+        $this->assertStringNotContainsString('sk-secret', $response->getContent());
+    }
+
+    public function test_models_carry_source_field_and_filter(): void
+    {
+        $this->getJson('/api/ai-finops/pricing/models')
+            ->assertOk()
+            ->assertJsonPath('data.0.source', 'litellm');
+
+        $this->getJson('/api/ai-finops/pricing/models?source=openrouter')
+            ->assertOk()
+            ->assertJsonPath('count', 0);
+    }
+
+    public function test_override_accepts_per_million_unit(): void
+    {
+        $this->postJson('/api/ai-finops/pricing/overrides', [
+            'model' => 'Llama-3.3-70B-Instruct',
+            'provider' => 'regolo',
+            'input_cost_per_token' => 0.60,
+            'output_cost_per_token' => 2.70,
+            'unit' => 'per_million',
+            'currency' => 'EUR',
+        ])->assertCreated();
+
+        $row = PricingOverride::query()->firstOrFail();
+        $this->assertSame('per_million', $row->unit);
+        $this->assertEqualsWithDelta(0.60 / 1_000_000, $row->toModelPrice()->inputPerToken, 1e-15);
+    }
+
     public function test_override_crud(): void
     {
         $this->postJson('/api/ai-finops/pricing/overrides', [

@@ -30,9 +30,13 @@ use Padosoft\LaravelAiFinOps\Models\KillSwitch;
 use Padosoft\LaravelAiFinOps\Models\Policy;
 use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Models\SpendApproval;
+use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
+use Padosoft\LaravelAiFinOps\Pricing\ManualPricingSource;
+use Padosoft\LaravelAiFinOps\Pricing\OpenRouterPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Support\TraceContext;
 
@@ -48,7 +52,16 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         // (Octane/Swoole/queue) never bleeds one run's trace/tenant into the next.
         $this->app->scoped(TraceContext::class);
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
+        // Back-compat: the bare PricingSource binding stays the LiteLLM base.
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
+
+        // The manager owns every source; PricingRegistry resolves through it.
+        $this->app->singleton(PricingSourceManager::class, fn ($app) => new PricingSourceManager([
+            'litellm' => $app->make(LiteLLMPricingSource::class),
+            'openrouter' => $app->make(OpenRouterPricingSource::class),
+            'manual' => $app->make(ManualPricingSource::class),
+        ], $app['config']));
+
         $this->app->singleton(PricingRegistry::class);
 
         // Seam for eval-harness quality scores; host binds a real adapter when wired.
@@ -120,6 +133,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
             CostCenter::class,
             SpendApproval::class,
             PricingOverride::class,
+            SubscriptionWindow::class,
         ] as $model) {
             $model::observe(AuditObserver::class);
         }

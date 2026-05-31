@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps\Pricing;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Http\Client\Factory as Http;
@@ -17,6 +18,8 @@ use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 class LiteLLMPricingSource implements PricingSource
 {
     private const CACHE_KEY = 'ai-finops:pricing:litellm';
+
+    private const SYNCED_AT_KEY = self::CACHE_KEY.':synced_at';
 
     public function __construct(
         private readonly Http $http,
@@ -74,6 +77,7 @@ class LiteLLMPricingSource implements PricingSource
         unset($data['sample_spec']);
 
         $this->cache->forever(self::CACHE_KEY, $data);
+        $this->cache->forever(self::SYNCED_AT_KEY, now()->toIso8601String());
 
         return count($data);
     }
@@ -81,6 +85,13 @@ class LiteLLMPricingSource implements PricingSource
     public function name(): string
     {
         return 'litellm';
+    }
+
+    public function syncedAt(): ?\DateTimeInterface
+    {
+        $at = $this->cache->get(self::SYNCED_AT_KEY);
+
+        return is_string($at) ? CarbonImmutable::parse($at) : null;
     }
 
     private function enabled(): bool

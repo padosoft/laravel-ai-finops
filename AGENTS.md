@@ -24,6 +24,11 @@ If context is missing, read the plan first, then read:
 - `laravel-ai-chat` is only a DEMO of `laravel/ai` + Vercel AI SDK — NOT a capability to integrate.
 - `agentic-qa-kit` is a Bun/TypeScript monorepo (not Laravel). Integrate it as an EXTERNAL QA runner
   driving the app over HTTP, correlated via the `trace-id` header — never via composer/laravel/ai.
+- Pricing is **multi-source**: LiteLLM ⊕ OpenRouter (live) ⊕ manual (feed-less providers like regolo,
+  EUR/per-1M) behind a `PricingSourceManager`. Resolution: manual override → `provider_source_map` →
+  freshest `syncedAt()` → `default_winner`. Raw ledger is pass-through truth; flat-rate **subscription
+  windows** zero covered calls (`CallStatus::Covered`); `markup_pct` overhead is estimate-only. Adding a
+  feed = implement `PricingSource` + register in the manager + `config pricing.sources`.
 - Everything is config-toggle driven (`config/ai-finops.php`) and multi-tenant. EU-compliant by default.
 - Package API under `/api/ai-finops/...` (session/CSRF for the admin, not browser-held tokens).
 - Never expose secrets (provider keys, channel webhooks): JSON exposes only `has_*` booleans; sanitized

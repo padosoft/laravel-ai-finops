@@ -49,18 +49,58 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Pricing
+    | Pricing (multi-source)
     |--------------------------------------------------------------------------
-    | Source order: the LiteLLM-style mirror is the BASE; a Padosoft local DB
-    | override entry, when present, WINS. Sync refreshes the mirror.
+    | Multiple price feeds resolve together. A local Padosoft DB override (the
+    | `manual` source) always wins when `overrides_win` is true. Otherwise the
+    | per-provider `provider_source_map` decides which feed is authoritative for
+    | a given provider ("who actually bills you"); when a provider is unmapped,
+    | the source with the freshest `synced_at` wins, and ties fall back to the
+    | `default_winner` order. NB: neither LiteLLM nor OpenRouter timestamps
+    | individual prices — "freshness" is OUR last successful per-source sync.
     */
     'pricing' => [
+        'overrides_win' => true, // local Padosoft DB entries (manual) override feeds
+
+        // Enabled sources, in default-precedence order (first = highest).
+        'sources' => ['manual', 'litellm', 'openrouter'],
+
+        // Tie / unknown-freshness winner order.
+        'default_winner' => ['manual', 'litellm', 'openrouter'],
+
         'litellm' => [
             'enabled' => env('AI_FINOPS_PRICING_LITELLM', true),
             'url' => env('AI_FINOPS_PRICING_LITELLM_URL', 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'),
-            'sync_cron' => env('AI_FINOPS_PRICING_SYNC_CRON', '0 4 * * *'),
         ],
-        'overrides_win' => true, // local Padosoft DB entries override the mirror
+
+        // OpenRouter live models API. The public listing needs no key; a key
+        // (never serialized) raises rate limits and unlocks per-endpoint prices
+        // (Phase 2). OpenRouter passes provider list prices through WITHOUT an
+        // inference markup; its ~5.5% credit top-up fee is modeled in `fees`.
+        'openrouter' => [
+            'enabled' => env('AI_FINOPS_PRICING_OPENROUTER', false),
+            'url' => env('AI_FINOPS_PRICING_OPENROUTER_URL', 'https://openrouter.ai/api/v1/models'),
+            'key' => env('AI_FINOPS_PRICING_OPENROUTER_KEY'), // optional; exposed only as has_* boolean
+            'allow_keyless' => true, // the public model list works without a key
+            'use_endpoints' => false, // Phase 2: per-provider endpoint prices (3–10× spread)
+        ],
+
+        'sync_cron' => env('AI_FINOPS_PRICING_SYNC_CRON', '0 4 * * *'),
+
+        // Which source is authoritative per provider (the "who bills you" rule).
+        // Unmapped providers fall through to freshest-sync / default_winner.
+        'provider_source_map' => [
+            'openrouter' => 'openrouter',
+            'regolo' => 'manual',
+            // openai/anthropic/azure/bedrock/vertex/fal_ai/… default to litellm
+        ],
+
+        // Per-provider account-level overhead applied to ESTIMATES only (what-if,
+        // forecast, preflight) — never to the raw metered ledger. Percent.
+        'fees' => [
+            // 'openrouter' => ['markup_pct' => 5.5],
+        ],
+
         'discounts' => [
             'prompt_cache' => true,
             'batch_api' => true,

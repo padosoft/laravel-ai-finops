@@ -8,6 +8,7 @@ use Orchestra\Testbench\TestCase as Orchestra;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\LaravelAiFinOpsServiceProvider;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Tests\Support\ArrayPricingSource;
 
 abstract class TestCase extends Orchestra
@@ -16,10 +17,16 @@ abstract class TestCase extends Orchestra
     {
         parent::setUp();
 
-        // Keep the suite hermetic: never hit the real LiteLLM network mirror.
-        // Tests that need prices construct their own PricingRegistry/source.
+        // Keep the suite hermetic: never hit the real LiteLLM/OpenRouter network.
+        // The PricingSourceManager wraps the (fake) PricingSource binding, so a test
+        // that rebinds PricingSource with its own models flows through the registry.
         $this->app->forgetInstance(PricingRegistry::class);
+        $this->app->forgetInstance(PricingSourceManager::class);
         $this->app->singleton(PricingSource::class, fn () => new ArrayPricingSource);
+        $this->app->singleton(PricingSourceManager::class, fn ($app) => new PricingSourceManager(
+            ['litellm' => $app->make(PricingSource::class)],
+            $app['config'],
+        ));
     }
 
     protected function getPackageProviders($app): array

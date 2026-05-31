@@ -13,6 +13,7 @@ use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
 use Padosoft\LaravelAiFinOps\Models\UsageRecord;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Support\TenantResolver;
 use Padosoft\LaravelAiFinOps\Support\TraceContext;
 use Padosoft\LaravelAiFinOps\Tests\Support\ArrayPricingSource;
@@ -35,7 +36,7 @@ class MeteringCostTest extends TestCase
         $listener = new MeteringListener(
             $this->app->make(UsageRecorder::class),
             $this->app['config'],
-            new PricingRegistry($source, $this->app['config']),
+            new PricingRegistry(new PricingSourceManager(['litellm' => $source], $this->app['config']), $this->app['config']),
             new CostCalculator,
             $this->app->make(TenantResolver::class),
             $this->app->make(TraceContext::class),

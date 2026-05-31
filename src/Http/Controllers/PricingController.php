@@ -7,22 +7,26 @@ namespace Padosoft\LaravelAiFinOps\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
+use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 
 class PricingController
 {
     private const SYNC_AT_KEY = 'ai-finops:pricing:synced_at';
 
-    public function models(Request $request, PricingSource $source): JsonResponse
+    public function models(Request $request, PricingSourceManager $sources): JsonResponse
     {
         $search = strtolower((string) $request->string('search'));
+        $sourceFilter = (string) $request->string('source');
         $limit = min(500, max(1, (int) $request->integer('limit', 100)));
 
         $models = [];
-        foreach ($source->all() as $model => $attr) {
+        foreach ($sources->merged() as $model => $attr) {
             if ($search !== '' && ! str_contains(strtolower((string) $model), $search)) {
+                continue;
+            }
+            if ($sourceFilter !== '' && ($attr['_source'] ?? null) !== $sourceFilter) {
                 continue;
             }
             $models[] = [
@@ -30,6 +34,7 @@ class PricingController
                 'provider' => $attr['litellm_provider'] ?? null,
                 'input_cost_per_token' => $attr['input_cost_per_token'] ?? null,
                 'output_cost_per_token' => $attr['output_cost_per_token'] ?? null,
+                'source' => $attr['_source'] ?? null,
             ];
             if (count($models) >= $limit) {
                 break;
@@ -54,11 +59,27 @@ class PricingController
         return response()->json(['synced' => $synced, 'models' => $count, 'synced_at' => $at]);
     }
 
-    public function syncStatus(PricingSource $source): JsonResponse
+    public function syncStatus(PricingSourceManager $sources): JsonResponse
     {
+        $list = [];
+        $total = 0;
+
+        foreach ($sources->sources() as $source) {
+            $count = count($source->all());
+            $total += $count;
+            $list[] = [
+                'name' => $source->name(),
+                'synced_at' => $source->syncedAt()?->format(\DateTimeInterface::ATOM),
+                'models' => $count,
+            ];
+        }
+
         return response()->json([
             'synced_at' => Cache::get(self::SYNC_AT_KEY),
-            'models' => count($source->all()),
+            'models' => $total,
+            'sources' => $list,
+            // Secret presence only — the key itself is never serialized.
+            'has_openrouter_key' => filled(config('ai-finops.pricing.openrouter.key')),
         ]);
     }
 
@@ -107,6 +128,10 @@ class PricingController
             // `sometimes` (not nullable): the column is non-null with a default, so
             // omit it when absent rather than persisting NULL.
             'currency' => ['sometimes', 'string', 'size:3'],
+            // Operators can enter feed-less prices per-million (e.g. regolo, EUR).
+            'unit' => ['sometimes', 'in:per_token,per_million'],
+            'effective_from' => ['sometimes', 'nullable', 'date'],
+            'note' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
     }
 }

@@ -37,4 +37,26 @@ class CostCalculator
             currency: $price->currency,
         );
     }
+
+    /**
+     * Apply a per-provider account-level overhead (e.g. OpenRouter's ~5.5% credit
+     * top-up fee) for ESTIMATES only. The raw metered ledger never uses this — it
+     * records the pass-through per-token cost. Returns the cost unchanged when no
+     * fee is configured for the provider.
+     */
+    public function withOverhead(float $cost, ?string $provider): float
+    {
+        if ($provider === null) {
+            return $cost;
+        }
+
+        $fees = (array) config('ai-finops.pricing.fees', []);
+        $pct = (float) ($fees[$provider]['markup_pct'] ?? 0.0);
+
+        if ($pct <= 0.0) {
+            return $cost;
+        }
+
+        return $cost * (1.0 + $pct / 100.0);
+    }
 }

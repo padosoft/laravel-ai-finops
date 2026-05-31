@@ -66,6 +66,46 @@ Copilot review comments). **Load this before working and pass it to every subage
   `Model::updateOrCreate`, the response code should reflect whether a record was created (201) or
   updated (200). Use `$model->wasRecentlyCreated ? 201 : 200`.
 
+## 2026-05-31 — M8 multi-source pricing
+
+- **Run tests with `php vendor/bin/phpunit` from PowerShell**, NOT the bare `vendor/bin/phpunit`
+  shim under the Bash tool — its `#!/usr/bin/env php` shebang fails with `'php': No such file or
+  directory` because `php` is not on the git-bash PATH on this Windows host (it IS on the PowerShell
+  PATH). PHP 8.4.21, PHPUnit 12.5.27. Baseline before M8 = 117 tests green.
+- **M8 design = `docs/superpowers/specs/2026-05-31-multi-source-pricing-design.md`** + plan
+  `docs/superpowers/plans/2026-05-31-multi-source-pricing.md`. Key facts from live research:
+  neither LiteLLM nor OpenRouter timestamps individual prices (freshness = OUR per-source sync time);
+  OpenRouter has NO inference markup (pass-through; ~5.5% credit-funding fee → model as overlay only);
+  real cost = who actually billed you (provider_source_map); regolo.ai has NO price API → manual source
+  (EUR, per-1M). OpenRouter price varies 3–10× by upstream endpoint (endpoint ingestion deferred Ph2).
+- **`PricingRegistry` now depends on `PricingSourceManager`, not a single `PricingSource`.** Anything
+  constructing `new PricingRegistry(...)` must pass a manager: wrap a fake with
+  `new PricingSourceManager(['litellm' => $source], $config)`. The bare `PricingSource::class` binding
+  stays (LiteLLM) for back-compat / the controller catalog, but resolution flows through the manager.
+- **Hermetic-test pattern for multi-source:** `TestCase::setUp` binds `PricingSourceManager` to wrap
+  whatever `PricingSource::class` resolves to (`['litellm' => $app->make(PricingSource::class)]`). So a
+  test that rebinds `PricingSource` with its own models still flows through the registry — the 4 API
+  tests (Pricing/Routing/Settings/WhatIf) needed NO change. Without this the manager would build the
+  REAL LiteLLM/OpenRouter sources and hit the network. Also `forgetInstance(PricingSourceManager)`.
+- **Any test that writes to the DB needs `use Illuminate\Foundation\Testing\RefreshDatabase`.** The
+  package registers migrations via `loadMigrationsFrom`, but Testbench only runs them when the trait
+  (or an explicit migrate) is present. Symptom without it: `no such table: ai_finops_*`.
+- **Manual `manual` source vs override lookup:** `ModelPrice::fromLiteLLM` hard-codes USD, so the
+  `manual` source is resolved in `PricingRegistry` via the currency-aware `override()` lookup (preserves
+  EUR), NOT via `fromLiteLLM`. `ManualPricingSource` exists for the merged catalog / per-source status.
+- **Freshness tie-break:** `PricingRegistry::isFresher` prefers the later `syncedAt()`; equal/both-null
+  falls back to `pricing.default_winner` order (lower index wins). `manual` is skipped in the
+  freshest-wins loop (it's the override, handled by precedence/map).
+- **Subscription €0 coverage is applied in `MeteringListener`** after pricing: `SubscriptionWindow::
+  activeFor(provider, tenant, model, now())` → zero `CostBreakdown`, `CallStatus::Covered`,
+  `metadata.covered_by`; the would-be rates stay in `metadata.rate_*` for "value consumed" analysis.
+  Wrapped in try/catch so a missing table never breaks metering. `RoutingEngine` reuses `activeFor` to
+  zero the cost metric (prefer covered providers).
+- **Overhead overlay is estimate-only:** `CostCalculator::withOverhead($cost, $provider)` reads
+  `pricing.fees.<provider>.markup_pct` via the `config()` helper (no constructor change, so
+  `new CostCalculator` keeps working) and is wired into the what-if projection — never the raw ledger.
+- **PowerShell `--filter "A|B"` breaks** (the `|` pipes); run the full suite or one `--filter Name`.
+
 ## 2026-05-27 — M2 review findings
 
 - **Never accept unimplemented `scope_type` values in validation** — `SettingsController` accepted
