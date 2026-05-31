@@ -5,7 +5,7 @@ continue cleanly after an interruption.
 
 ## 2026-05-31
 
-### M8 — Multi-source pricing (branch `feat/core-multisource-pricing`) — IMPLEMENTED, PR/release pending
+### M8 — Multi-source pricing — ✅ MERGED (PR #13) + RELEASED v1.1.0 (2026-06-01)
 - Design + plan: `docs/superpowers/specs/2026-05-31-multi-source-pricing-design.md`,
   `docs/superpowers/plans/2026-05-31-multi-source-pricing.md`. Research: LiteLLM vs OpenRouter vs regolo.
 - **Done (code + tests green, 153 PHPUnit):**
@@ -25,10 +25,11 @@ continue cleanly after an interruption.
     override units, `pricing/subscription-windows` CRUD.
   - M8.11 docs: README multi-source/subscriptions; config comments; admin handoff spec in admin repo.
   - M8.12 closeout: LESSON/RULES updated with M8 know-how.
-- **Resume point / NEXT:** AGENTS.md + plan skill knowhow tweak → local Copilot `/review` of full branch
-  diff (zero comments) → push → PR `feat/core-multisource-pricing`→main + @copilot reviewer → CI+Copilot
-  green → merge. Then **tag vX.X.X + GitHub release (confirm version with user)**. Admin UI = separate
-  plan from the handoff spec (Playwright per interaction).
+- **Closed:** local Copilot `/review` (no issues) → PR #13 → @copilot (43/43 files, 0 comments) →
+  CI green (8.3/8.4/8.5) → squash-merged → **tag + release v1.1.0** (user-confirmed minor bump).
+- **Resume point / NEXT:** admin UI implementation in `../laravel-ai-finops-admin` from the handoff spec
+  `docs/superpowers/specs/2026-05-31-multi-source-pricing-admin-design.md` (brainstorm → plan → impl,
+  Playwright E2E per interaction). Phase-2 backend: OpenRouter per-endpoint price ingestion (`use_endpoints`).
 
 ## 2026-05-27
 
