@@ -43,4 +43,33 @@ class LiteLLMPricingSourceTest extends TestCase
         $this->assertArrayHasKey('gpt-5.1', $source->all());
         $this->assertArrayNotHasKey('sample_spec', $source->all());
     }
+
+    public function test_sync_stamps_synced_at_only_on_success(): void
+    {
+        config(['ai-finops.pricing.litellm.enabled' => true]);
+
+        $http = $this->app->make(Http::class);
+        $http->fake([
+            '*' => $http->response(['gpt-5.1' => ['input_cost_per_token' => 0.000002]]),
+        ]);
+
+        $source = new LiteLLMPricingSource($http, $this->app->make(Cache::class), $this->app['config']);
+
+        $this->assertNull($source->syncedAt());
+        $source->sync();
+        $this->assertInstanceOf(\DateTimeInterface::class, $source->syncedAt());
+    }
+
+    public function test_synced_at_stays_null_on_failed_sync(): void
+    {
+        config(['ai-finops.pricing.litellm.enabled' => true]);
+
+        $http = $this->app->make(Http::class);
+        $http->fake(['*' => $http->response('boom', 500)]);
+
+        $source = new LiteLLMPricingSource($http, $this->app->make(Cache::class), $this->app['config']);
+
+        $this->assertSame(0, $source->sync());
+        $this->assertNull($source->syncedAt());
+    }
 }
