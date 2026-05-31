@@ -30,6 +30,7 @@ use Padosoft\LaravelAiFinOps\Models\KillSwitch;
 use Padosoft\LaravelAiFinOps\Models\Policy;
 use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Models\SpendApproval;
+use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\ManualPricingSource;
@@ -132,6 +133,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
             CostCenter::class,
             SpendApproval::class,
             PricingOverride::class,
+            SubscriptionWindow::class,
         ] as $model) {
             $model::observe(AuditObserver::class);
         }
