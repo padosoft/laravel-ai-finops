@@ -249,7 +249,11 @@ secrets/PII never captured.
 - **M9.7** API: usage rows + `diagnostics/estimate` from prompt + settings estimator/actual-cost
   indicators + tests.
 - **M9.8** Docs: **full README audit & update** (cascade a/b/c, optional `yethee/tiktoken`, actual-cost
-  capture mechanism, new columns, fal unit pricing) — standalone final task (project rule).
+  capture mechanism, new columns, fal unit pricing) — standalone final task (project rule). **Call out
+  explicitly as a headline/WOW point that we OVERCAME a current `laravel/ai` limitation:** it normalizes
+  responses to tokens only and discards the provider's actual cost + raw payload — we recover the real
+  billed cost (e.g. OpenRouter `usage.cost`) via a global `Http` response-middleware capture, so FinOps
+  can record the *invoiced* amount, not just a tariff estimate.
 - **M9.9** Admin alignment: seed handoff spec in the admin repo (method badges, estimator screen,
   fal rates, billed vs computed) → its own brainstorm→plan→impl (Playwright per interaction).
 - **M9.10 (release)** macro PR → main, CI+Copilot green, confirm version with user → tag + release.
