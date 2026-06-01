@@ -128,8 +128,10 @@ class PricingController
             // `sometimes` (not nullable): the column is non-null with a default, so
             // omit it when absent rather than persisting NULL.
             'currency' => ['sometimes', 'string', 'size:3'],
-            // Operators can enter feed-less prices per-million (e.g. regolo, EUR).
-            'unit' => ['sometimes', 'in:per_token,per_million'],
+            // Operators can enter feed-less prices per-million (e.g. regolo, EUR) or,
+            // for media providers (fal.ai), a non-token unit + its rate.
+            'unit' => ['sometimes', 'in:per_token,per_million,per_second,per_image,per_megapixel,per_request'],
+            'unit_rate' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'effective_from' => ['sometimes', 'nullable', 'date'],
             'note' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
