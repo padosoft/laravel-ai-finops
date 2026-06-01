@@ -46,7 +46,7 @@ class RawResponseCapture
      * Sum cost + native tokens across the currently buffered captures and clear
      * them. Returns null when nothing was captured.
      *
-     * @return array{cost: float, currency: string, tokens: TokenUsage}|null
+     * @return array{cost: float, currency: string, tokens: TokenUsage, id: ?string}|null
      */
     public function sumCost(): ?array
     {
@@ -56,11 +56,13 @@ class RawResponseCapture
 
         $cost = 0.0;
         $currency = 'credits';
+        $id = null;
         $input = $output = $cached = $reasoning = 0;
 
         foreach ($this->drain() as $c) {
             $cost += (float) ($c['cost'] ?? 0.0);
             $currency = (string) ($c['currency'] ?? $currency);
+            $id = $c['id'] ?? $id;
             $input += (int) ($c['prompt_tokens'] ?? 0);
             $output += (int) ($c['completion_tokens'] ?? 0);
             $cached += (int) ($c['cached_tokens'] ?? 0);
@@ -71,6 +73,7 @@ class RawResponseCapture
             'cost' => $cost,
             'currency' => $currency,
             'tokens' => new TokenUsage(input: $input, output: $output, cached: $cached, reasoning: $reasoning),
+            'id' => $id,
         ];
     }
 }

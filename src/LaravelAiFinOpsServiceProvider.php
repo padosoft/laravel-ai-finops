@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps;
 
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Events\AgentPrompted;
@@ -16,6 +17,7 @@ use Padosoft\LaravelAiFinOps\Console\CapturePricesCommand;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
+use Padosoft\LaravelAiFinOps\Contracts\ActualCostResolver;
 use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
 use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
@@ -34,8 +36,10 @@ use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\ActualCostResolverManager;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\HeuristicTokenEstimator;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\HttpUsageCaptureMiddleware;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\OpenRouterCostResolver;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\RawResponseCapture;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\TiktokenTokenEstimator;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
@@ -82,6 +86,16 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
 
             return new HeuristicTokenEstimator;
         });
+
+        // Actual-cost resolvers (cost cascade case a), routed per provider. Scoped so
+        // the OpenRouter resolver reads the current request's RawResponseCapture.
+        $this->app->scoped(ActualCostResolver::class, fn ($app) => new ActualCostResolverManager([
+            'openrouter' => new OpenRouterCostResolver(
+                $app->make(RawResponseCapture::class),
+                $app['config'],
+                $app->make(Factory::class),
+            ),
+        ], $app['config']));
 
         // Seam for eval-harness quality scores; host binds a real adapter when wired.
         $this->app->singleton(
