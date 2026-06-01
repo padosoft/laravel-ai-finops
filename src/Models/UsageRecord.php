@@ -34,6 +34,8 @@ class UsageRecord extends Model
         'cost_output' => 'decimal:8',
         'cost_cached' => 'decimal:8',
         'cost_total' => 'decimal:8',
+        'billed_cost' => 'decimal:8',
+        'tokens_estimated' => 'bool',
         'latency_ms' => 'int',
         'metadata' => 'array',
         'created_at' => 'datetime',

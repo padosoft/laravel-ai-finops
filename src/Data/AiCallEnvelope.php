@@ -6,6 +6,7 @@ namespace Padosoft\LaravelAiFinOps\Data;
 
 use DateTimeImmutable;
 use Padosoft\LaravelAiFinOps\Enums\CallStatus;
+use Padosoft\LaravelAiFinOps\Enums\CostMethod;
 use Padosoft\LaravelAiFinOps\Enums\Modality;
 
 /**
@@ -37,6 +38,12 @@ final readonly class AiCallEnvelope
         public ?DateTimeImmutable $occurredAt = null,
         /** @var array<string,mixed> */
         public array $metadata = [],
+        // How the cost was derived + whether tokens were estimated + the provider's
+        // real invoiced amount when known (distinct from the tariff-computed cost).
+        public CostMethod $costMethod = CostMethod::Computed,
+        public bool $tokensEstimated = false,
+        public ?float $billedCost = null,
+        public ?string $billedCurrency = null,
     ) {}
 
     public function withStatus(CallStatus $status): self
@@ -95,6 +102,10 @@ final readonly class AiCallEnvelope
             'cost_total' => $this->cost->total,
             'currency' => $this->cost->currency,
             'latency_ms' => $this->latencyMs,
+            'cost_method' => $this->costMethod->value,
+            'tokens_estimated' => $this->tokensEstimated,
+            'billed_cost' => $this->billedCost,
+            'billed_currency' => $this->billedCurrency,
             // Returned as a raw array; the UsageRecord model's `array` cast encodes
             // it on write (encoding here too would double-encode the JSON).
             'metadata' => $this->metadata === [] ? null : $this->metadata,
@@ -132,6 +143,10 @@ final readonly class AiCallEnvelope
             purposeTag: $data['purpose_tag'] ?? null,
             latencyMs: isset($data['latency_ms']) ? (int) $data['latency_ms'] : null,
             metadata: self::decodeMetadata($data['metadata'] ?? null),
+            costMethod: CostMethod::from((string) ($data['cost_method'] ?? CostMethod::Computed->value)),
+            tokensEstimated: (bool) ($data['tokens_estimated'] ?? false),
+            billedCost: isset($data['billed_cost']) ? (float) $data['billed_cost'] : null,
+            billedCurrency: $data['billed_currency'] ?? null,
         );
     }
 
@@ -156,6 +171,10 @@ final readonly class AiCallEnvelope
             latencyMs: $overrides['latencyMs'] ?? $this->latencyMs,
             occurredAt: $overrides['occurredAt'] ?? $this->occurredAt,
             metadata: $overrides['metadata'] ?? $this->metadata,
+            costMethod: $overrides['costMethod'] ?? $this->costMethod,
+            tokensEstimated: $overrides['tokensEstimated'] ?? $this->tokensEstimated,
+            billedCost: $overrides['billedCost'] ?? $this->billedCost,
+            billedCurrency: $overrides['billedCurrency'] ?? $this->billedCurrency,
         );
     }
 
