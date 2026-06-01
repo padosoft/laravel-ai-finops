@@ -37,6 +37,7 @@ use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\ActualCostResolverManager;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\FalUnitCostResolver;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\HeuristicTokenEstimator;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\HttpUsageCaptureMiddleware;
 use Padosoft\LaravelAiFinOps\Pricing\Cost\OpenRouterCostResolver;
@@ -95,6 +96,7 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
                 $app['config'],
                 $app->make(Factory::class),
             ),
+            'fal' => new FalUnitCostResolver,
         ], $app['config']));
 
         // Seam for eval-harness quality scores; host binds a real adapter when wired.
