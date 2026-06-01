@@ -85,7 +85,9 @@ class SettingsController
         $data = $request->validate([
             'provider' => ['required', 'string', 'max:64'],
             'model' => ['required', 'string', 'max:128'],
-            'tokens_input' => ['sometimes', 'integer', 'min:0'],
+            // At least one of tokens_input / prompt / messages must be supplied.
+            // tokens_input is required when neither prompt nor messages are present.
+            'tokens_input' => ['required_without_all:prompt,messages', 'sometimes', 'integer', 'min:0'],
             'tokens_output' => ['sometimes', 'integer', 'min:0'],
             'tokens_cached' => ['sometimes', 'integer', 'min:0'],
             'prompt' => ['sometimes', 'string'],

@@ -62,7 +62,7 @@ class MeteringListener
             modality: Modality::Text,
             tokens: $this->tokensFromUsage($response->usage),
             // For the estimation fallback (case c): count the prompt + completion text.
-            promptText: $this->stringifyPrompt($prompt),
+            promptText: $this->normalisePrompt($prompt),
             completionText: $response->text ?? null,
         );
 
@@ -82,14 +82,24 @@ class MeteringListener
         $this->recorder->record($envelope);
     }
 
-    /** Best-effort prompt text for the token estimator (case c). Never stored. */
-    private function stringifyPrompt(mixed $prompt): ?string
+    /**
+     * Best-effort normalisation of a laravel/ai prompt for the token estimator (case c).
+     * Returns the prompt as-is when it is already a string or a chat-messages array
+     * (both are accepted by TokenEstimator::estimate). Never stored.
+     *
+     * @return string|array<int,mixed>|null
+     */
+    private function normalisePrompt(mixed $prompt): string|array|null
     {
         if (is_string($prompt)) {
             return $prompt;
         }
 
-        if (is_object($prompt) && (method_exists($prompt, '__toString') || $prompt instanceof \Stringable)) {
+        if (is_array($prompt)) {
+            return $prompt;
+        }
+
+        if (is_object($prompt) && ($prompt instanceof \Stringable || method_exists($prompt, '__toString'))) {
             return (string) $prompt;
         }
 

@@ -103,11 +103,14 @@ return [
 
         // Recover the provider's ACTUAL billed cost that laravel/ai drops during
         // normalization (it keeps tokens only). When enabled, a global Http response
-        // middleware sniffs usage.cost for the listed hosts (never message content),
-        // so the cascade can record the invoiced amount instead of a tariff estimate.
+        // middleware captures usage.cost from responses whose body matches the
+        // OpenRouter shape (usage.cost present) — Laravel's Http middleware does not
+        // expose the request URL, so body-shape matching is used instead of host
+        // filtering. The `hosts` key is reserved for documentation / future use when
+        // Laravel adds request context to response middleware.
         'actual_cost' => [
             'enabled' => env('AI_FINOPS_ACTUAL_COST', false),
-            'hosts' => ['openrouter.ai'],
+            'hosts' => ['openrouter.ai'], // informational — body-shape matching is active
             'store_raw' => false, // also stash the captured usage/cost block in metadata
             'openrouter' => [
                 'generation_lookup' => false,   // confirm via GET /generation?id= (+1 HTTP)

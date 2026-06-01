@@ -157,10 +157,11 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
 
     /**
      * Recover the provider's billed cost that laravel/ai discards: a global Http
-     * response middleware sniffs OpenRouter-shaped `usage.cost` into the scoped
-     * RawResponseCapture. Opt-in (cost-bearing providers only) and never reads
-     * message content. The capture is resolved lazily so it stays request-scoped
-     * (Octane-safe) even though the middleware registers once.
+     * response middleware captures OpenRouter-shaped `usage.cost` into the scoped
+     * RawResponseCapture. Laravel's response middleware does not expose the request
+     * URL/host, so matching is by body shape (usage.cost field) rather than by host.
+     * Opt-in and captures ONLY the usage/cost block — never message content.
+     * The capture is resolved lazily so it stays request-scoped (Octane-safe).
      */
     private function bootActualCostCapture(): void
     {
