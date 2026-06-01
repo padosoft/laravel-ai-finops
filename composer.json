@@ -48,7 +48,8 @@
         "mockery/mockery": "^1.6"
     },
     "suggest": {
-        "laravel/ai": "Required to meter real AI calls via the laravel/ai request/response lifecycle (^0.6.8 || ^0.7)."
+        "laravel/ai": "Required to meter real AI calls via the laravel/ai request/response lifecycle (^0.6.8 || ^0.7).",
+        "yethee/tiktoken": "Exact token counting for OpenAI / OpenAI-compatible models (FinOps cost-estimation case c); a heuristic estimator is used when absent."
     },
     "autoload": {
         "psr-4": {
