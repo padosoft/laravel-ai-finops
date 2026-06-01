@@ -21,11 +21,11 @@ class FalUnitCostResolver implements ActualCostResolver
     public function resolve(AiCallEnvelope $call): ?ResolvedActualCost
     {
         try {
-            $override = PricingOverride::query()
-                ->where('model', $call->model)
-                ->where(fn ($q) => $q->where('provider', $call->provider)->orWhereNull('provider'))
-                ->whereNotNull('unit_rate')
-                ->first();
+            $base = PricingOverride::query()->where('model', $call->model)->whereNotNull('unit_rate');
+
+            // Prefer an exact provider match, then a provider-agnostic (null) row.
+            $override = (clone $base)->where('provider', $call->provider)->first()
+                ?? (clone $base)->whereNull('provider')->first();
         } catch (Throwable) {
             return null;
         }

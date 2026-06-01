@@ -48,6 +48,24 @@ class FalUnitCostTest extends TestCase
         $this->assertEqualsWithDelta(0.012, $resolved->amount, 1e-9); // 4 × 0.003
     }
 
+    public function test_provider_specific_override_wins_over_null_provider(): void
+    {
+        PricingOverride::create([
+            'model' => 'flux-image', 'provider' => null,
+            'input_cost_per_token' => 0, 'output_cost_per_token' => 0,
+            'unit' => 'per_image', 'unit_rate' => 0.010, 'currency' => 'USD',
+        ]);
+        PricingOverride::create([
+            'model' => 'flux-image', 'provider' => 'fal',
+            'input_cost_per_token' => 0, 'output_cost_per_token' => 0,
+            'unit' => 'per_image', 'unit_rate' => 0.003, 'currency' => 'USD',
+        ]);
+
+        $resolved = (new FalUnitCostResolver)->resolve($this->envelope('flux-image', ['image_count' => 1]));
+
+        $this->assertEqualsWithDelta(0.003, $resolved->amount, 1e-9); // fal-specific wins, not 0.010
+    }
+
     public function test_returns_null_without_unit_override(): void
     {
         $this->assertNull((new FalUnitCostResolver)->resolve($this->envelope('no-rate', ['inference_time' => 5])));

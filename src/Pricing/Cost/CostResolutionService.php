@@ -50,11 +50,14 @@ class CostResolutionService
         if ($actual !== null) {
             $tokens = $actual->tokens ?? $usage;
             $breakdown = $this->calculator->cost($tokens, $price, $base);
+            // Keep the tariff input/output split for analytics ONLY when it is in the
+            // same currency as the billed amount; otherwise don't mix currencies.
+            $sameCurrency = $breakdown->currency === $actual->currency;
             $cost = new CostBreakdown(
-                total: $actual->amount,                  // billed amount is authoritative
-                input: $breakdown->input,                // tariff split kept for analytics
-                output: $breakdown->output,
-                cached: $breakdown->cached,
+                total: $actual->amount,                              // billed amount is authoritative
+                input: $sameCurrency ? $breakdown->input : 0.0,
+                output: $sameCurrency ? $breakdown->output : 0.0,
+                cached: $sameCurrency ? $breakdown->cached : 0.0,
                 currency: $actual->currency,
             );
 

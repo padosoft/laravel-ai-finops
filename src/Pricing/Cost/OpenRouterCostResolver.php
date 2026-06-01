@@ -61,7 +61,10 @@ class OpenRouterCostResolver implements ActualCostResolver
             return null;
         }
 
-        $url = rtrim((string) $this->config->get('ai-finops.pricing.openrouter.url', 'https://openrouter.ai/api/v1'), '/');
+        // The configured URL points at the models listing (…/api/v1/models); the
+        // generation lookup lives at the API root (…/api/v1/generation).
+        $configured = rtrim((string) $this->config->get('ai-finops.pricing.openrouter.url', 'https://openrouter.ai/api/v1/models'), '/');
+        $root = preg_replace('#/models$#', '', $configured) ?? $configured;
         $key = $this->config->get('ai-finops.pricing.openrouter.key');
 
         try {
@@ -69,7 +72,7 @@ class OpenRouterCostResolver implements ActualCostResolver
             if (is_string($key) && $key !== '') {
                 $request = $request->withToken($key);
             }
-            $response = $request->get($url.'/generation', ['id' => $id]);
+            $response = $request->get($root.'/generation', ['id' => $id]);
 
             if (! $response->successful()) {
                 return null;

@@ -124,18 +124,20 @@ class MeteringListener
         TokenUsage $tokens,
         string|array|null $promptText = null,
         ?string $completionText = null,
+        array $callMetadata = [],
     ): AiCallEnvelope {
         $currency = (string) $this->config->get('ai-finops.currency.base', 'USD');
         $tenantId = $this->trace->tenantId() ?? $this->tenants->resolve();
 
-        // Draft envelope so the actual-cost resolver can route by provider.
-        $draft = new AiCallEnvelope(traceId: $traceId, provider: $provider, model: $model, tokens: $tokens);
+        // Draft envelope so the actual-cost resolver can route by provider AND read
+        // call metadata (e.g. fal's inference_time / image count for unit pricing).
+        $draft = new AiCallEnvelope(traceId: $traceId, provider: $provider, model: $model, tokens: $tokens, metadata: $callMetadata);
 
         // Cascade: actual billed cost → tokens×tariff → estimated tokens×tariff.
         $resolution = $this->costs->resolve($draft, $tokens, $promptText, $completionText);
 
         $price = $this->pricing->priceFor($model, $provider);
-        $metadata = $this->provenance($price);
+        $metadata = array_merge($callMetadata, $this->provenance($price));
 
         $cost = $resolution->cost;
         $method = $resolution->method;
