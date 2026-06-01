@@ -3,6 +3,23 @@
 Dated work log (YYYY-MM-DD). Newest first. Records what was done and the resume point so any session can
 continue cleanly after an interruption.
 
+## 2026-06-01
+
+### M9 — Cost resolution cascade (branch `feat/core-cost-cascade`) — IMPLEMENTED, PR/release pending
+- Design+plan: `docs/superpowers/specs/2026-06-01-cost-resolution-cascade-design.md`,
+  `docs/superpowers/plans/2026-06-01-cost-resolution-cascade.md`.
+- **Done (179 PHPUnit green):** config (actual_cost, token_estimation) + tiktoken suggest; ledger
+  columns `cost_method`/`tokens_estimated`/`billed_cost`/`billed_currency` + `CostMethod` enum;
+  `TokenEstimator` (Heuristic + optional Tiktoken auto-bind); `RawResponseCapture` + opt-in `Http`
+  capture middleware (recovers OpenRouter `usage.cost` that laravel/ai drops); `ActualCostResolver`
+  seam + manager + OpenRouter resolver; `CostResolutionService` cascade wired into `MeteringListener`;
+  fal unit-cost resolver (`unit_rate`); API estimate-from-prompt + usage cost_method/billed_cost +
+  settings estimator/actual-cost; README full audit (cascade + WOW "overcame laravel/ai cost drop").
+- **Provider matrix proven** (`CostResolutionCascadeTest`): OpenRouter→actual, OpenAI/Anthropic/Gemini→
+  computed, regolo→computed (manual EUR/1M), unknown→estimated; fal→unit (`FalUnitCostTest`).
+- **NEXT:** local Copilot `/review` → PR `feat/core-cost-cascade`→main + @copilot → CI+Copilot green →
+  merge → tag/release (additive → minor `v1.2.0`, confirm). Then admin alignment (handoff spec).
+
 ## 2026-05-31
 
 ### M8 — Multi-source pricing — ✅ MERGED (PR #13) + RELEASED v1.1.0 (2026-06-01)

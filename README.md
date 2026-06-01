@@ -52,6 +52,14 @@ Most tools either **track** cost or **block** it. This package does both, and go
   tracked); routing prefers covered providers to "stay within the plan", and you shorten the window
   the moment the provider says the quota is spent. Plus an optional per‑provider overhead % (e.g.
   OpenRouter's ~5.5% credit fee) folded into estimates — the raw ledger stays pass‑through.
+- 🎯 **Truest‑cost cascade + we recover what `laravel/ai` throws away.** The official SDK normalizes
+  every response to **tokens only** and **drops the provider's real billed cost** (and raw payload).
+  We get it back: a global HTTP capture reads e.g. OpenRouter's `usage.cost` before it's discarded, so
+  each call is priced by the truest number available — **(a) actual billed cost → (b) actual tokens ×
+  your tariff → (c) estimated tokens × tariff** — and every ledger row records **which method** and
+  **whether tokens were estimated**. Token estimation is built‑in (heuristic), with **exact counts via
+  the optional [`yethee/tiktoken`](https://github.com/yethee/tiktoken-php)**. Media providers (fal.ai)
+  are priced per second/image/megapixel.
 - 🧱 **N‑scope budgets** (global → tenant → user → cost‑center → provider → model → agent → purpose) ×
   periods (daily…yearly + rolling), with soft/hard limits. A hard budget blocks further calls with
   HTTP **402**; pass a pre‑flight cost estimate (or use `diagnostics/estimate`) to also block the
@@ -117,8 +125,10 @@ cost, currency, tenant, cost‑center, agent step, purpose, `trace‑id`). It fl
 
 1. **Pre‑flight** — estimate + `PolicyEngine` → `allow | block | throttle | downgrade | queue |
    require‑approval` (kill switches, guardrails, hard budgets, declarative policies).
-2. **Post‑flight** — real usage → `CostCalculator` (multi‑source pricing ⊕ overrides ⊕ subscription
-   coverage) → append‑only **ledger** (with frozen price provenance: source, exact rates, upstream
+2. **Post‑flight** — the **cost cascade** picks the truest number — provider's actual billed cost →
+   actual tokens × tariff → estimated tokens × tariff (multi‑source pricing ⊕ overrides ⊕ subscription
+   coverage) → append‑only **ledger**, recording `cost_method` (actual/computed/estimated/covered),
+   `tokens_estimated`, `billed_cost`, and frozen price provenance (source, exact rates, upstream
    provider) → budgets, forecasts and alerts update.
 
 The envelope is also the **cross‑package contract**: any Padosoft package can populate its context
@@ -133,6 +143,7 @@ tags so FinOps attributes and governs spend consistently.
 | Metering | Single `laravel/ai` hook; immutable usage ledger; multimodal token tracking |
 | Pricing | Multi‑source: LiteLLM ⊕ OpenRouter (live) ⊕ manual (regolo, EUR/per‑1M); per‑provider authority map → freshest‑sync → env tie‑break; overrides win; cache/discount aware |
 | Subscriptions | Flat‑rate coverage windows → covered calls cost €0 (tokens tracked); per‑provider overhead % for estimates |
+| Cost accuracy | Cascade: **actual billed cost** (recovered from the provider response that laravel/ai drops) → **actual tokens × tariff** → **estimated tokens × tariff**; per‑call `cost_method` + `tokens_estimated` + `billed_cost`. Token estimator (heuristic; exact via optional `yethee/tiktoken`). fal.ai priced per second/image/megapixel |
 | Budgets | N‑scope hierarchy × periods; soft/hard; burndown; in‑flight enforcement |
 | Policies | DSL (scope + min‑cost + model) → block/approval/downgrade/throttle/queue; simulate |
 | Approvals | Pending → approve/reject workflow |
@@ -175,12 +186,14 @@ All endpoints are mounted under `config('ai-finops.routes.prefix')` (default `ap
 URL path `/api/ai-finops`). The public `health` probe is open; every other endpoint is wrapped with
 `auth_middleware`.
 
-`usage` · `usage/{id}` · `usage/{traceId}/trace` · `pricing/models` (`?source=`) ·
+`usage` (rows carry `cost_method` · `tokens_estimated` · `billed_cost`) · `usage/{id}` ·
+`usage/{traceId}/trace` · `diagnostics/estimate` (token counts **or** a `prompt`/`messages` to estimate) ·
+`pricing/models` (`?source=`) ·
 `pricing/sync` · `pricing/sync/status` (per‑source + `has_openrouter_key`) · `pricing/overrides` ·
 `pricing/subscription-windows` (flat‑rate €0 canoni) · `budgets/*` · `policies/*` ·
 `approvals/*` · `cost-centers` · `chargeback/report` · `routing/*` · `forecast` · `anomalies` ·
 `whatif/*` · `footprint/*` · `credits/pools/*` · `alerts/*` · `price-watch/*` · `copilot/*` ·
-`audit` · `settings` · `settings/kill-switch` · `diagnostics/estimate` · `dashboard/*`
+`audit` · `settings` · `settings/kill-switch` · `dashboard/*`
 
 > The companion **`laravel-ai-finops-admin`** (React + Vite + Tailwind) consumes this surface.
 
@@ -248,6 +261,28 @@ Resolution order: **manual override → `provider_source_map` → freshest `sync
 Feed‑less providers (e.g. **regolo.ai**, EUR / per‑1M) are entered by hand via `pricing/overrides`.
 **Flat‑rate subscription windows** (`pricing/subscription-windows`) meter covered calls at **€0** while
 active — the raw ledger stays pass‑through truth.
+
+**Cost cascade & actual‑cost recovery.** Opt in to recover the provider's real billed cost that
+`laravel/ai` discards (it keeps tokens only); a global HTTP middleware captures `usage.cost` for the
+listed hosts (never message content). Token estimation (cascade case c) is built‑in; install the
+optional **`yethee/tiktoken`** for exact OpenAI/compatible counts (the heuristic is used otherwise):
+
+```php
+'pricing' => [
+    // …sources / provider_source_map / fees as above…
+
+    'actual_cost' => [
+        'enabled'   => env('AI_FINOPS_ACTUAL_COST', false), // capture provider usage.cost (e.g. OpenRouter)
+        'hosts'     => ['openrouter.ai'],
+        'openrouter' => ['generation_lookup' => false, 'credit_to_currency' => 1.0],
+    ],
+    'token_estimation' => ['enabled' => true, 'expected_output_ratio' => 1.0],
+],
+```
+
+Each ledger row records `cost_method` (`actual` | `computed` | `estimated` | `covered`),
+`tokens_estimated`, and `billed_cost` — so you can tell invoiced truth from a tariff estimate.
+Media providers (**fal.ai**) are priced per second/image/megapixel via a manual `unit` + `unit_rate`.
 
 ---
 

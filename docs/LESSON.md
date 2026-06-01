@@ -106,6 +106,32 @@ Copilot review comments). **Load this before working and pass it to every subage
   `new CostCalculator` keeps working) and is wired into the what-if projection — never the raw ledger.
 - **PowerShell `--filter "A|B"` breaks** (the `|` pipes); run the full suite or one `--filter Name`.
 
+## 2026-06-01 — M9 cost resolution cascade
+
+- **laravel/ai drops provider cost + raw payload by design.** `Usage` carries tokens only
+  (`vendor/laravel/ai/src/Responses/Data/Usage.php`); the OpenRouter gateway's `extractUsage()`
+  reads tokens and discards `usage.cost`. We recover it WITHOUT forking: the gateway builds its client
+  via Laravel's **`Http` facade**, so `Http::globalResponseMiddleware()` sees the raw JSON first. The
+  middleware filters by **body shape** (`usage.cost` present) because Laravel's response middleware
+  does NOT expose the request URL/host. Only the usage/cost block + id are captured (never content).
+- **`RawResponseCapture` is `scoped`** (like `TraceContext`); the global middleware is registered once
+  in boot but resolves the capture lazily (`app(RawResponseCapture::class)` inside the closure) so it
+  stays request-scoped under Octane.
+- **Cascade order** (`CostResolutionService`): (a) `ActualCostResolver` → (b) actual tokens × tariff →
+  (c) `TokenEstimator` × tariff. Subscription coverage is applied AFTER in `MeteringListener`
+  (method=`covered`, cost 0, but `billed_cost` keeps the would-be amount).
+- **Case (c) estimates BOTH** input (from the prompt, threaded via `$event->prompt` → stringify) and
+  output (from `$response->text`). Heuristic `max(chars/4, words×1.3)`; `yethee/tiktoken` auto-binds
+  when installed (`class_exists(EncoderProvider::class)` — the `::class` constant doesn't require the
+  class to exist, so the `use` import + `class_exists` are safe with the package absent).
+- **`call()` is a reserved Testbench method** (HTTP helper) — name test helpers `envelopeFor()` etc.
+  (joins the `seed()`/`status()` reserved-name list).
+- **MeteringListener constructor changed** (CostCalculator → CostResolutionService); any manual
+  construction in tests must build a `CostResolutionService(NullActualCostResolver, registry,
+  CostCalculator, HeuristicTokenEstimator, config)`.
+- Provider matrix proven in `CostResolutionCascadeTest`: OpenRouter→actual, OpenAI/Anthropic/Gemini→
+  computed, regolo→computed (manual EUR/1M), unknown→estimated; fal→unit-cost in `FalUnitCostTest`.
+
 ## 2026-05-27 — M2 review findings
 
 - **Never accept unimplemented `scope_type` values in validation** — `SettingsController` accepted
