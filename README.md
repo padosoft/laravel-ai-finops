@@ -282,6 +282,8 @@ optional **`yethee/tiktoken`** for exact OpenAI/compatible counts (the heuristic
 
 Each ledger row records `cost_method` (`actual` | `computed` | `estimated` | `covered`),
 `tokens_estimated`, and `billed_cost` — so you can tell invoiced truth from a tariff estimate.
+(For `actual` rows, `cost_total` is the provider's billed amount; the `cost_input`/`cost_output` split
+is tariff‑derived for analytics and may not sum exactly to `cost_total`.)
 Media providers (**fal.ai**) are priced per second/image/megapixel via a manual `unit` + `unit_rate`.
 
 ---

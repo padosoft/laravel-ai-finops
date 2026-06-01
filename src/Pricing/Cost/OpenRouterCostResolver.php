@@ -37,7 +37,7 @@ class OpenRouterCostResolver implements ActualCostResolver
         $rate = (float) $this->config->get('ai-finops.pricing.actual_cost.openrouter.credit_to_currency', 1.0);
 
         $amount = $sum['cost'] * $rate;
-        $tokens = $sum['tokens'] instanceof TokenUsage ? $sum['tokens'] : null;
+        $tokens = $sum['tokens']; // sumCost() always returns a TokenUsage
 
         // Optional authoritative confirmation via the generation endpoint (USD).
         if ((bool) $this->config->get('ai-finops.pricing.actual_cost.openrouter.generation_lookup', false)) {

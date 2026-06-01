@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps\Pricing\Cost;
 
+use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
@@ -27,6 +28,10 @@ class HttpUsageCaptureMiddleware
                 $body = (string) $response->getBody();
                 if ($response->getBody()->isSeekable()) {
                     $response->getBody()->rewind();
+                } else {
+                    // Non-seekable stream was consumed by reading it — hand a fresh
+                    // buffered copy downstream so the body is never left empty.
+                    $response = $response->withBody(Utils::streamFor($body));
                 }
 
                 $data = json_decode($body, true);
