@@ -89,6 +89,14 @@ class PricingApiTest extends TestCase
         $this->assertEqualsWithDelta(0.0005, (float) $row->unit_rate, 1e-12);
     }
 
+    public function test_override_rejects_invalid_unit(): void
+    {
+        $this->postJson('/api/ai-finops/pricing/overrides', [
+            'model' => 'x', 'input_cost_per_token' => 0, 'output_cost_per_token' => 0,
+            'unit' => 'per_hour', // not a supported unit
+        ])->assertStatus(422);
+    }
+
     public function test_override_accepts_per_million_unit(): void
     {
         $this->postJson('/api/ai-finops/pricing/overrides', [
