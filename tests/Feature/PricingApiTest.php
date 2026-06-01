@@ -72,6 +72,31 @@ class PricingApiTest extends TestCase
             ->assertJsonPath('count', 0);
     }
 
+    public function test_override_accepts_fal_unit_rate(): void
+    {
+        $this->postJson('/api/ai-finops/pricing/overrides', [
+            'model' => 'flux-video',
+            'provider' => 'fal',
+            'input_cost_per_token' => 0,
+            'output_cost_per_token' => 0,
+            'unit' => 'per_second',
+            'unit_rate' => 0.0005,
+            'currency' => 'USD',
+        ])->assertCreated();
+
+        $row = PricingOverride::query()->where('model', 'flux-video')->firstOrFail();
+        $this->assertSame('per_second', $row->unit);
+        $this->assertEqualsWithDelta(0.0005, (float) $row->unit_rate, 1e-12);
+    }
+
+    public function test_override_rejects_invalid_unit(): void
+    {
+        $this->postJson('/api/ai-finops/pricing/overrides', [
+            'model' => 'x', 'input_cost_per_token' => 0, 'output_cost_per_token' => 0,
+            'unit' => 'per_hour', // not a supported unit
+        ])->assertStatus(422);
+    }
+
     public function test_override_accepts_per_million_unit(): void
     {
         $this->postJson('/api/ai-finops/pricing/overrides', [
