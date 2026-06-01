@@ -34,6 +34,10 @@ If context is missing, read the plan first, then read:
 - Never expose secrets (provider keys, channel webhooks): JSON exposes only `has_*` booleans; sanitized
   errors only (no stack traces / raw provider payloads).
 - Update `docs/PROGRESS.md` after meaningful steps; update `docs/LESSON.md` on any non-obvious discovery.
+- **README is a mandatory deliverable**: keep `README.md` precise and meticulous, reflecting every
+  shipped feature in EVERY relevant section (hero, How-it-works, Features table, Configuration with a
+  worked example, API overview, commands). **Every analysis/plan ends with a dedicated standalone final
+  task: a full README audit & update** — its own task, last before tag/release. See `docs/RULES.md`.
 
 ## Definition of Done (every task/subtask)
 

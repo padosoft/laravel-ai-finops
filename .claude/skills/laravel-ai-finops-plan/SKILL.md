@@ -30,4 +30,9 @@ pass-through truth. admin = React+Vite+Tailwind; secrets never exposed (`has_ope
 Tests: wrap fakes in `PricingSourceManager`; `RefreshDatabase` for DB writes; run `php vendor/bin/phpunit`
 from PowerShell (the bash shim can't find php).
 
+Every analysis/plan MUST end with a **dedicated standalone final task: full README audit & update**
+(its own task, last before tag/release) — keep `README.md` precise/meticulous, every feature reflected
+in EVERY relevant section (hero, How-it-works, Features table, Configuration w/ worked example, API
+overview, commands); no stale phrasing. Same rule for the admin README. See `docs/RULES.md`.
+
 At package completion: WOW README, consolidate LESSON.md into rules/skills/AGENTS.md, tag `vX.X.X` + release.

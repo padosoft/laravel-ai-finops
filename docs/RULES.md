@@ -55,6 +55,22 @@ npm run e2e                   # Playwright (admin / UI slices)
   lesson learned from Copilot comments. Pass it to every subagent and re-read at session start.
 - Keep entries dated `YYYY-MM-DD`.
 
+### README is a first‑class, mandatory deliverable (non‑negotiable)
+
+- **The `README.md` MUST be kept precise and meticulous, reflecting every shipped feature in EVERY
+  relevant section** — not just one spot. A feature is not "done" until the README shows it wherever a
+  reader would look: hero/"why it's different", the "How it works" flow, the Features table, the
+  **Configuration** section (with a worked config example), the **API overview** (explicit endpoints),
+  Artisan commands, and any quick‑start/snippet. No stale claims left behind (e.g. "single source",
+  "mirror", hard‑coded counts).
+- **Every analysis / implementation plan MUST end with a dedicated, standalone final task: a full
+  README audit & update.** It is its own task (not folded into a generic "docs" task), and it is the
+  LAST step before tag/release. When producing a plan, explicitly call this task out.
+- README audit checklist to run before claiming completion: grep for now‑false phrasings; verify each
+  new config key, endpoint, command and behaviour appears; confirm the Configuration + API sections
+  match the actual `config/ai-finops.php` and `routes/api.php`.
+- The companion admin repo's `README.md` follows the same rule for its UI/feature surface.
+
 ## Conventions & Gotchas (consolidated from LESSON.md)
 
 These recurred across M0–M7; treat them as standing rules:
