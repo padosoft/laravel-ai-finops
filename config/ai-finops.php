@@ -101,6 +101,31 @@ return [
             // 'openrouter' => ['markup_pct' => 5.5],
         ],
 
+        // Recover the provider's ACTUAL billed cost that laravel/ai drops during
+        // normalization (it keeps tokens only). When enabled, a global Http response
+        // middleware captures usage.cost from responses whose body matches the
+        // OpenRouter shape (usage.cost present) — Laravel's Http middleware does not
+        // expose the request URL, so body-shape matching is used instead of host
+        // filtering. The `hosts` key is reserved for documentation / future use when
+        // Laravel adds request context to response middleware.
+        'actual_cost' => [
+            'enabled' => env('AI_FINOPS_ACTUAL_COST', false),
+            'hosts' => ['openrouter.ai'], // informational — body-shape matching is active
+            'store_raw' => false, // also stash the captured usage/cost block in metadata
+            'openrouter' => [
+                'generation_lookup' => false,   // confirm via GET /generation?id= (+1 HTTP)
+                'credit_to_currency' => 1.0,    // OpenRouter credits → base currency
+            ],
+        ],
+
+        // Cost cascade fallback: when a response carries neither cost nor token usage,
+        // estimate tokens then apply the tariff (flagged tokens_estimated). Heuristic by
+        // default; auto-upgrades to exact counts if the optional yethee/tiktoken is installed.
+        'token_estimation' => [
+            'enabled' => true,
+            'expected_output_ratio' => 1.0, // preflight: assume output ≈ input × ratio
+        ],
+
         'discounts' => [
             'prompt_cache' => true,
             'batch_api' => true,

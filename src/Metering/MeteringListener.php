@@ -16,9 +16,10 @@ use Padosoft\LaravelAiFinOps\Data\AiCallEnvelope;
 use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Data\TokenUsage;
 use Padosoft\LaravelAiFinOps\Enums\CallStatus;
+use Padosoft\LaravelAiFinOps\Enums\CostMethod;
 use Padosoft\LaravelAiFinOps\Enums\Modality;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
-use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\CostResolutionService;
 use Padosoft\LaravelAiFinOps\Pricing\ModelPrice;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Support\TenantResolver;
@@ -36,7 +37,7 @@ class MeteringListener
         private readonly UsageRecorder $recorder,
         private readonly Config $config,
         private readonly PricingRegistry $pricing,
-        private readonly CostCalculator $calculator,
+        private readonly CostResolutionService $costs,
         private readonly TenantResolver $tenants,
         private readonly TraceContext $trace,
     ) {}
@@ -44,7 +45,7 @@ class MeteringListener
     /** Handles AgentPrompted and (via inheritance) AgentStreamed. */
     public function handleAgentPrompted(AgentPrompted $event): void
     {
-        $this->recordAgentResponse($event->invocationId, $event->response);
+        $this->recordAgentResponse($event->invocationId, $event->response, $event->prompt);
     }
 
     public function handleEmbeddingsGenerated(EmbeddingsGenerated $event): void
@@ -52,7 +53,7 @@ class MeteringListener
         $this->recordEmbeddings($event->invocationId, $event->response, $event->model);
     }
 
-    public function recordAgentResponse(string $invocationId, AgentResponse|StreamedAgentResponse $response): void
+    public function recordAgentResponse(string $invocationId, AgentResponse|StreamedAgentResponse $response, mixed $prompt = null): void
     {
         $envelope = $this->baseEnvelope(
             traceId: $invocationId,
@@ -60,6 +61,9 @@ class MeteringListener
             model: $response->meta->model ?? 'unknown',
             modality: Modality::Text,
             tokens: $this->tokensFromUsage($response->usage),
+            // For the estimation fallback (case c): count the prompt + completion text.
+            promptText: $this->normalisePrompt($prompt),
+            completionText: $response->text ?? null,
         );
 
         $this->recorder->record($envelope);
@@ -78,6 +82,30 @@ class MeteringListener
         $this->recorder->record($envelope);
     }
 
+    /**
+     * Best-effort normalisation of a laravel/ai prompt for the token estimator (case c).
+     * Returns the prompt as-is when it is already a string or a chat-messages array
+     * (both are accepted by TokenEstimator::estimate). Never stored.
+     *
+     * @return string|array<int,mixed>|null
+     */
+    private function normalisePrompt(mixed $prompt): string|array|null
+    {
+        if (is_string($prompt)) {
+            return $prompt;
+        }
+
+        if (is_array($prompt)) {
+            return $prompt;
+        }
+
+        if (is_object($prompt) && ($prompt instanceof \Stringable || method_exists($prompt, '__toString'))) {
+            return (string) $prompt;
+        }
+
+        return null;
+    }
+
     public function tokensFromUsage(Usage $usage): TokenUsage
     {
         return new TokenUsage(
@@ -94,23 +122,39 @@ class MeteringListener
         string $model,
         Modality $modality,
         TokenUsage $tokens,
+        string|array|null $promptText = null,
+        ?string $completionText = null,
+        array $callMetadata = [],
     ): AiCallEnvelope {
         $currency = (string) $this->config->get('ai-finops.currency.base', 'USD');
-
-        $price = $this->pricing->priceFor($model, $provider);
-        $cost = $this->calculator->cost($tokens, $price, $currency);
         $tenantId = $this->trace->tenantId() ?? $this->tenants->resolve();
 
-        $metadata = $this->provenance($price);
+        // Draft envelope so the actual-cost resolver can route by provider AND read
+        // call metadata (e.g. fal's inference_time / image count for unit pricing).
+        $draft = new AiCallEnvelope(traceId: $traceId, provider: $provider, model: $model, tokens: $tokens, metadata: $callMetadata);
+
+        // Cascade: actual billed cost → tokens×tariff → estimated tokens×tariff.
+        $resolution = $this->costs->resolve($draft, $tokens, $promptText, $completionText);
+
+        $price = $this->pricing->priceFor($model, $provider);
+        $metadata = array_merge($callMetadata, $this->provenance($price));
+
+        $cost = $resolution->cost;
+        $method = $resolution->method;
         $status = CallStatus::Recorded;
+        $billedCost = $resolution->billedCost;
+        $billedCurrency = $resolution->billedCurrency;
 
         // Flat-rate subscription coverage: within an active window the call is free
         // (the subscription already paid). Tokens are still recorded for visibility;
-        // the would-be price stays in metadata so per-model "value consumed" is kept.
+        // the would-be price + method stay recorded so "value consumed" is analyzable.
         $covered = $this->activeSubscription($provider, $tenantId, $model);
         if ($covered !== null) {
             $metadata['covered_by'] = $covered->label;
+            $billedCost ??= $cost->total; // remember what it would have cost
+            $billedCurrency ??= $cost->currency;
             $cost = CostBreakdown::zero($currency);
+            $method = CostMethod::Covered;
             $status = CallStatus::Covered;
         }
 
@@ -122,13 +166,17 @@ class MeteringListener
             model: $model,
             modality: $modality,
             status: $status,
-            tokens: $tokens,
+            tokens: $resolution->tokens,
             cost: $cost,
             agentStep: $this->trace->agentStep(),
             purposeTag: $this->trace->purposeTag(),
             tenantId: $tenantId,
             costCenter: $this->trace->costCenter(),
             metadata: $metadata,
+            costMethod: $method,
+            tokensEstimated: $resolution->tokensEstimated,
+            billedCost: $billedCost,
+            billedCurrency: $billedCurrency,
         );
     }
 

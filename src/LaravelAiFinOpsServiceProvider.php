@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps;
 
+use Illuminate\Http\Client\Factory;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Events\AgentPrompted;
 use Laravel\Ai\Events\AgentStreamed;
@@ -15,10 +17,12 @@ use Padosoft\LaravelAiFinOps\Console\CapturePricesCommand;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
 use Padosoft\LaravelAiFinOps\Console\PruneLedgerCommand;
 use Padosoft\LaravelAiFinOps\Console\ReportCommand;
+use Padosoft\LaravelAiFinOps\Contracts\ActualCostResolver;
 use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
 use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
+use Padosoft\LaravelAiFinOps\Contracts\TokenEstimator;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
 use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
@@ -32,6 +36,13 @@ use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\ActualCostResolverManager;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\FalUnitCostResolver;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\HeuristicTokenEstimator;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\HttpUsageCaptureMiddleware;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\OpenRouterCostResolver;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\RawResponseCapture;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\TiktokenTokenEstimator;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\ManualPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\OpenRouterPricingSource;
@@ -39,6 +50,7 @@ use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Support\TraceContext;
+use Yethee\Tiktoken\EncoderProvider;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -51,6 +63,8 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         // Scoped (not singleton): reset at each request/job boundary so a worker
         // (Octane/Swoole/queue) never bleeds one run's trace/tenant into the next.
         $this->app->scoped(TraceContext::class);
+        // Scoped like TraceContext: per-request/job buffer of captured provider cost.
+        $this->app->scoped(RawResponseCapture::class);
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
         // Back-compat: the bare PricingSource binding stays the LiteLLM base.
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
@@ -63,6 +77,27 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         ], $app['config']));
 
         $this->app->singleton(PricingRegistry::class);
+
+        // Token estimator (cost cascade case c): exact via optional yethee/tiktoken
+        // when installed, else the zero-dependency heuristic.
+        $this->app->singleton(TokenEstimator::class, function () {
+            if (class_exists(EncoderProvider::class)) {
+                return new TiktokenTokenEstimator;
+            }
+
+            return new HeuristicTokenEstimator;
+        });
+
+        // Actual-cost resolvers (cost cascade case a), routed per provider. Scoped so
+        // the OpenRouter resolver reads the current request's RawResponseCapture.
+        $this->app->scoped(ActualCostResolver::class, fn ($app) => new ActualCostResolverManager([
+            'openrouter' => new OpenRouterCostResolver(
+                $app->make(RawResponseCapture::class),
+                $app['config'],
+                $app->make(Factory::class),
+            ),
+            'fal' => new FalUnitCostResolver,
+        ], $app['config']));
 
         // Seam for eval-harness quality scores; host binds a real adapter when wired.
         $this->app->singleton(
@@ -117,6 +152,29 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $this->bootMeteringHook();
         $this->bootEnforcementHook();
         $this->bootAuditObservers();
+        $this->bootActualCostCapture();
+    }
+
+    /**
+     * Recover the provider's billed cost that laravel/ai discards: a global Http
+     * response middleware captures OpenRouter-shaped `usage.cost` into the scoped
+     * RawResponseCapture. Laravel's response middleware does not expose the request
+     * URL/host, so matching is by body shape (usage.cost field) rather than by host.
+     * Opt-in and captures ONLY the usage/cost block — never message content.
+     * The capture is resolved lazily so it stays request-scoped (Octane-safe).
+     */
+    private function bootActualCostCapture(): void
+    {
+        if (! config('ai-finops.pricing.actual_cost.enabled', false)) {
+            return;
+        }
+
+        $storeRaw = (bool) config('ai-finops.pricing.actual_cost.store_raw', false);
+
+        Http::globalResponseMiddleware(fn ($response) => HttpUsageCaptureMiddleware::make(
+            $this->app->make(RawResponseCapture::class),
+            $storeRaw,
+        )($response));
     }
 
     /** Observe governance models so mutations land in the audit log. */

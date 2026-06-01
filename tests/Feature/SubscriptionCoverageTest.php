@@ -12,6 +12,9 @@ use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Models\UsageRecord;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\CostResolutionService;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\HeuristicTokenEstimator;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\NullActualCostResolver;
 use Padosoft\LaravelAiFinOps\Pricing\CostCalculator;
 use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
@@ -34,11 +37,13 @@ class SubscriptionCoverageTest extends TestCase
             ],
         ], 'litellm', now());
 
+        $registry = new PricingRegistry(new PricingSourceManager(['litellm' => $source], $this->app['config']), $this->app['config']);
+
         return new MeteringListener(
             $this->app->make(UsageRecorder::class),
             $this->app['config'],
-            new PricingRegistry(new PricingSourceManager(['litellm' => $source], $this->app['config']), $this->app['config']),
-            new CostCalculator,
+            $registry,
+            new CostResolutionService(new NullActualCostResolver, $registry, new CostCalculator, new HeuristicTokenEstimator, $this->app['config']),
             $this->app->make(TenantResolver::class),
             $this->app->make(TraceContext::class),
         );

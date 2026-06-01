@@ -23,7 +23,14 @@ class PricingOverride extends Model
         'output_cost_per_token' => 'float',
         'cache_read_cost_per_token' => 'float',
         'cache_write_cost_per_token' => 'float',
+        'unit_rate' => 'float',
     ];
+
+    /** Non-token (media) unit rate, when the override prices per second/image/etc. */
+    public function unitRate(): ?float
+    {
+        return $this->unit_rate !== null ? (float) $this->unit_rate : null;
+    }
 
     public function getTable(): string
     {
