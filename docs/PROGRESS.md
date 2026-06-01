@@ -5,7 +5,7 @@ continue cleanly after an interruption.
 
 ## 2026-06-01
 
-### M9 — Cost resolution cascade (branch `feat/core-cost-cascade`) — IMPLEMENTED, PR/release pending
+### M9 — Cost resolution cascade — ✅ MERGED (PR #14) + RELEASED v1.2.0 (2026-06-01)
 - Design+plan: `docs/superpowers/specs/2026-06-01-cost-resolution-cascade-design.md`,
   `docs/superpowers/plans/2026-06-01-cost-resolution-cascade.md`.
 - **Done (179 PHPUnit green):** config (actual_cost, token_estimation) + tiktoken suggest; ledger
@@ -17,8 +17,11 @@ continue cleanly after an interruption.
   settings estimator/actual-cost; README full audit (cascade + WOW "overcame laravel/ai cost drop").
 - **Provider matrix proven** (`CostResolutionCascadeTest`): OpenRouter→actual, OpenAI/Anthropic/Gemini→
   computed, regolo→computed (manual EUR/1M), unknown→estimated; fal→unit (`FalUnitCostTest`).
-- **NEXT:** local Copilot `/review` → PR `feat/core-cost-cascade`→main + @copilot → CI+Copilot green →
-  merge → tag/release (additive → minor `v1.2.0`, confirm). Then admin alignment (handoff spec).
+- **Closed:** 2 local Copilot rounds + PR #14 (@copilot: 4 issues → fixed: generation-lookup root,
+  currency-mix guard, fal exact-provider preference, draft metadata) → CI green (8.3/8.4/8.5) → merged →
+  **released v1.2.0**.
+- **NEXT:** admin alignment to M9 (method badge, estimated marker, billed-vs-computed, estimate-from-prompt
+  screen, fal unit rates) — full loop → admin v1.2.0.
 
 ## 2026-05-31
 
