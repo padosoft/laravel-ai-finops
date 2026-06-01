@@ -175,7 +175,9 @@ All endpoints are mounted under `config('ai-finops.routes.prefix')` (default `ap
 URL path `/api/ai-finops`). The public `health` probe is open; every other endpoint is wrapped with
 `auth_middleware`.
 
-`usage` · `usage/{id}` · `usage/{traceId}/trace` · `pricing/*` · `budgets/*` · `policies/*` ·
+`usage` · `usage/{id}` · `usage/{traceId}/trace` · `pricing/models` (`?source=`) ·
+`pricing/sync` · `pricing/sync/status` (per‑source + `has_openrouter_key`) · `pricing/overrides` ·
+`pricing/subscription-windows` (flat‑rate €0 canoni) · `budgets/*` · `policies/*` ·
 `approvals/*` · `cost-centers` · `chargeback/report` · `routing/*` · `forecast` · `anomalies` ·
 `whatif/*` · `footprint/*` · `credits/pools/*` · `alerts/*` · `price-watch/*` · `copilot/*` ·
 `audit` · `settings` · `settings/kill-switch` · `diagnostics/estimate` · `dashboard/*`
@@ -216,8 +218,36 @@ Then flip the matching toggle under `config('ai-finops.integrations.*')` / `feat
 ## Configuration
 
 `config/ai-finops.php` toggles everything: master `enabled` / `metering` / `enforcement`, scoped
-`kill_switch`, multi‑tenancy resolver, currency + FX, pricing source, per‑feature flags, alert
-channels, footprint factors, retention. Sensible, EU‑friendly defaults out of the box.
+`kill_switch`, multi‑tenancy resolver, currency + FX, **multi‑source pricing**, per‑feature flags,
+alert channels, footprint factors, retention. Sensible, EU‑friendly defaults out of the box.
+
+**Multi‑source pricing** is config‑driven — enable feeds, pick who's authoritative per provider, and
+break ties by freshness:
+
+```php
+'pricing' => [
+    'overrides_win'  => true,                                   // manual prices always win
+    'sources'        => ['manual', 'litellm', 'openrouter'],    // enabled, in precedence order
+    'default_winner' => ['manual', 'litellm', 'openrouter'],    // tie / unknown-freshness order
+
+    'openrouter' => [
+        'enabled'       => env('AI_FINOPS_PRICING_OPENROUTER', false),
+        'key'           => env('AI_FINOPS_PRICING_OPENROUTER_KEY'), // optional; exposed only as has_*
+        'allow_keyless' => true,                                    // public list works without a key
+    ],
+
+    // "Who actually bills you": route a provider's price to a specific feed.
+    'provider_source_map' => ['openrouter' => 'openrouter', 'regolo' => 'manual'],
+
+    // Account-level overhead for ESTIMATES only (e.g. OpenRouter ~5.5% credit fee). Never the ledger.
+    'fees' => ['openrouter' => ['markup_pct' => 5.5]],
+],
+```
+
+Resolution order: **manual override → `provider_source_map` → freshest `synced_at` → `default_winner`**.
+Feed‑less providers (e.g. **regolo.ai**, EUR / per‑1M) are entered by hand via `pricing/overrides`.
+**Flat‑rate subscription windows** (`pricing/subscription-windows`) meter covered calls at **€0** while
+active — the raw ledger stays pass‑through truth.
 
 ---
 
