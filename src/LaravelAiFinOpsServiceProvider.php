@@ -19,6 +19,7 @@ use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
 use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
+use Padosoft\LaravelAiFinOps\Contracts\TokenEstimator;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
 use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
@@ -32,6 +33,8 @@ use Padosoft\LaravelAiFinOps\Models\PricingOverride;
 use Padosoft\LaravelAiFinOps\Models\SpendApproval;
 use Padosoft\LaravelAiFinOps\Models\SubscriptionWindow;
 use Padosoft\LaravelAiFinOps\Policies\EnforcementListener;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\HeuristicTokenEstimator;
+use Padosoft\LaravelAiFinOps\Pricing\Cost\TiktokenTokenEstimator;
 use Padosoft\LaravelAiFinOps\Pricing\LiteLLMPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\ManualPricingSource;
 use Padosoft\LaravelAiFinOps\Pricing\OpenRouterPricingSource;
@@ -39,6 +42,7 @@ use Padosoft\LaravelAiFinOps\Pricing\PricingRegistry;
 use Padosoft\LaravelAiFinOps\Pricing\PricingSourceManager;
 use Padosoft\LaravelAiFinOps\Routing\NullQualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Support\TraceContext;
+use Yethee\Tiktoken\EncoderProvider;
 
 class LaravelAiFinOpsServiceProvider extends ServiceProvider
 {
@@ -63,6 +67,16 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         ], $app['config']));
 
         $this->app->singleton(PricingRegistry::class);
+
+        // Token estimator (cost cascade case c): exact via optional yethee/tiktoken
+        // when installed, else the zero-dependency heuristic.
+        $this->app->singleton(TokenEstimator::class, function () {
+            if (class_exists(EncoderProvider::class)) {
+                return new TiktokenTokenEstimator;
+            }
+
+            return new HeuristicTokenEstimator;
+        });
 
         // Seam for eval-harness quality scores; host binds a real adapter when wired.
         $this->app->singleton(
