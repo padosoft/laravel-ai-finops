@@ -1,0 +1,24 @@
+:root {
+  --brand-primary: #0d9488;
+  --brand-accent: #2563eb;
+  --brand-warning: #b45309;
+}
+
+.site-title,
+.footer-title {
+  letter-spacing: 0;
+}
+
+.docmd-card,
+.callout,
+.collapsible {
+  border-radius: 8px;
+}
+
+.docmd-card {
+  border-top: 3px solid var(--brand-primary);
+}
+
+.content table code {
+  white-space: nowrap;
+}

@@ -1,0 +1,22 @@
+{
+  "name": "laravel-ai-finops-docs",
+  "version": "0.0.0",
+  "description": "Static docmd documentation site for padosoft/laravel-ai-finops.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "node ./node_modules/@docmd/core/dist/bin/docmd.js dev",
+    "build": "node ./node_modules/@docmd/core/dist/bin/docmd.js build",
+    "check": "node ./node_modules/@docmd/core/dist/bin/docmd.js validate && node ./scripts/check-no-raw-html.mjs"
+  },
+  "keywords": [],
+  "author": "Padosoft",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@docmd/core": "^0.8.6",
+    "@huggingface/transformers": "^4.2.0",
+    "docmd-search": "^0.1.0-alpha.0",
+    "onnxruntime-node": "1.24.3"
+  }
+}

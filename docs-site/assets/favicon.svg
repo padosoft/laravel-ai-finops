@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Laravel AI FinOps">
+  <rect width="64" height="64" rx="14" fill="#0d9488"/>
+  <path d="M16 40.5 28.5 18l7 12 4.5-7.5L52 40.5h-7.4l-4.5-7.3-4.4 7.3h-6.8l-7.9-13.2-7.1 13.2H16Z" fill="#fff"/>
+  <circle cx="45" cy="19" r="4" fill="#99f6e4"/>
+</svg>

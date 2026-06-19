@@ -3,6 +3,8 @@
 > **Govern every euro your AI spends.** Cross-provider metering, budgets, policy enforcement,
 > chargeback, forecasting and cost‑aware routing for Laravel — the FinOps/governance brick for AI agents.
 
+Official documentation: **https://doc.laravel-ai-finops.padosoft.com**
+
 <p>
   <a href="https://github.com/padosoft/laravel-ai-finops/actions/workflows/ci.yml"><img src="https://github.com/padosoft/laravel-ai-finops/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/PHP-8.3%20%7C%208.4%20%7C%208.5-777BB4" alt="PHP">
