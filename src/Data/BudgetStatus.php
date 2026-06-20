@@ -22,6 +22,25 @@ final readonly class BudgetStatus
         return round($this->limit - $this->spent, 8);
     }
 
+    /** Fixed-precision decimal string (8 dp) of the limit (v1.3, additive). */
+    public function limitDecimal(): string
+    {
+        return CostBreakdown::decimal($this->limit);
+    }
+
+    /** Fixed-precision decimal string (8 dp) of the spend (v1.3, additive). */
+    public function spentDecimal(): string
+    {
+        return CostBreakdown::decimal($this->spent);
+    }
+
+    /** Fixed-precision decimal string (8 dp) of the remaining budget (v1.3, additive). */
+    public function remainingDecimal(): string
+    {
+        return CostBreakdown::decimal($this->remaining());
+    }
+
+    /** A ratio, not money — stays a rounded float. */
     public function percent(): float
     {
         return $this->limit > 0 ? round(($this->spent / $this->limit) * 100, 4) : 0.0;
@@ -55,6 +74,10 @@ final readonly class BudgetStatus
             'limit' => $this->limit,
             'spent' => round($this->spent, 8),
             'remaining' => $this->remaining(),
+            // v1.3 — authoritative fixed-precision decimal strings (additive).
+            'limit_decimal' => $this->limitDecimal(),
+            'spent_decimal' => $this->spentDecimal(),
+            'remaining_decimal' => $this->remainingDecimal(),
             'percent' => $this->percent(),
             'currency' => $this->currency,
             'hard' => $this->hard,

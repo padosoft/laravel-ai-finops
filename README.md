@@ -199,6 +199,15 @@ URL path `/api/ai-finops`). The public `health` probe is open; every other endpo
 
 > The companion **`laravel-ai-finops-admin`** (React + Vite + Tailwind) consumes this surface.
 
+### Money precision (v1.3)
+
+Money is financial data, so every cost amount is also exposed as an **authoritative
+fixed-precision decimal string** at 8 decimals — drift-free, never a float. `CostBreakdown` adds
+`total_decimal` / `input_decimal` / `output_decimal` / `cached_decimal` (and the `*Decimal()` accessors);
+`BudgetStatus` adds `limit_decimal` / `spent_decimal` / `remaining_decimal`. These are **additive** — the
+existing `total` / `spent` / … float keys (and `percent`, a ratio) are kept, so existing consumers and the
+admin cockpit are unaffected; new consumers that need exact money should read the `*_decimal` strings.
+
 ---
 
 ## Artisan commands
