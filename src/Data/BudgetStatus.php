@@ -19,22 +19,22 @@ final readonly class BudgetStatus
 
     public function remaining(): float
     {
-        return round($this->limit - $this->spent, 8);
+        return round($this->limit - $this->spent, CostBreakdown::SCALE);
     }
 
-    /** Fixed-precision decimal string (8 dp) of the limit (v1.3, additive). */
+    /** Fixed-precision formatted decimal string (8 dp) of the limit (v1.3, additive). */
     public function limitDecimal(): string
     {
         return CostBreakdown::decimal($this->limit);
     }
 
-    /** Fixed-precision decimal string (8 dp) of the spend (v1.3, additive). */
+    /** Fixed-precision formatted decimal string (8 dp) of the spend (v1.3, additive). */
     public function spentDecimal(): string
     {
         return CostBreakdown::decimal($this->spent);
     }
 
-    /** Fixed-precision decimal string (8 dp) of the remaining budget (v1.3, additive). */
+    /** Fixed-precision formatted decimal string (8 dp) of the remaining budget (v1.3, additive). */
     public function remainingDecimal(): string
     {
         return CostBreakdown::decimal($this->remaining());
@@ -72,9 +72,9 @@ final readonly class BudgetStatus
             'budget_id' => $this->budgetId,
             'name' => $this->name,
             'limit' => $this->limit,
-            'spent' => round($this->spent, 8),
+            'spent' => round($this->spent, CostBreakdown::SCALE),
             'remaining' => $this->remaining(),
-            // v1.3 — authoritative fixed-precision decimal strings (additive).
+            // v1.3 — fixed-precision formatted decimal strings (additive, stable serialization).
             'limit_decimal' => $this->limitDecimal(),
             'spent_decimal' => $this->spentDecimal(),
             'remaining_decimal' => $this->remainingDecimal(),

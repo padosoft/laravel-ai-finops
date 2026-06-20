@@ -8,9 +8,9 @@ use Padosoft\LaravelAiFinOps\Data\CostBreakdown;
 use Padosoft\LaravelAiFinOps\Tests\TestCase;
 
 /**
- * v1.3 — money is exposed as fixed-precision 8-dp decimal STRINGS (the
- * authoritative, drift-free representation) alongside the back-compatible float
- * fields.
+ * v1.3 — money is ALSO exposed as fixed-precision FORMATTED 8-dp decimal STRINGS
+ * (a stable, deterministic serialization — number_format'd from the float, not
+ * true decimal arithmetic) alongside the back-compatible float fields.
  */
 class CostBreakdownDecimalTest extends TestCase
 {

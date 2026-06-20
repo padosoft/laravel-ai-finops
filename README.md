@@ -201,8 +201,10 @@ URL path `/api/ai-finops`). The public `health` probe is open; every other endpo
 
 ### Money precision (v1.3)
 
-Money is financial data, so every cost amount is also exposed as an **authoritative
-fixed-precision decimal string** at 8 decimals — drift-free, never a float. `CostBreakdown` adds
+Money is financial data, so every cost amount is also exposed as a **fixed-precision
+formatted decimal string** at 8 decimals — a stable, deterministic serialization for APIs
+and storage (`number_format`'d from the float, not true arbitrary-precision decimal
+arithmetic). `CostBreakdown` adds
 `total_decimal` / `input_decimal` / `output_decimal` / `cached_decimal` (and the `*Decimal()` accessors);
 `BudgetStatus` adds `limit_decimal` / `spent_decimal` / `remaining_decimal`. These are **additive** — the
 existing `total` / `spent` / … float keys (and `percent`, a ratio) are kept, so existing consumers and the
