@@ -77,7 +77,16 @@ final readonly class CostBreakdown
      */
     public static function decimal(float $amount): string
     {
-        return number_format($amount, self::SCALE, '.', '');
+        $formatted = number_format($amount, self::SCALE, '.', '');
+
+        // Normalize signed zero ("-0.00000000", which a subtraction/rounding
+        // artifact can produce) to "0.00000000" — a leading minus on a
+        // zero-valued money string is surprising and trips downstream consumers.
+        if ($formatted[0] === '-' && (float) $formatted === 0.0) {
+            return substr($formatted, 1);
+        }
+
+        return $formatted;
     }
 
     /** @return array<string,float|string> */

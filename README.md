@@ -208,7 +208,8 @@ arithmetic). `CostBreakdown` adds
 `total_decimal` / `input_decimal` / `output_decimal` / `cached_decimal` (and the `*Decimal()` accessors);
 `BudgetStatus` adds `limit_decimal` / `spent_decimal` / `remaining_decimal`. These are **additive** — the
 existing `total` / `spent` / … float keys (and `percent`, a ratio) are kept, so existing consumers and the
-admin cockpit are unaffected; new consumers that need exact money should read the `*_decimal` strings.
+admin cockpit are unaffected; consumers that want a stable, fixed-precision string representation of money
+(rather than a float that varies in printed form) should read the `*_decimal` strings.
 
 ---
 

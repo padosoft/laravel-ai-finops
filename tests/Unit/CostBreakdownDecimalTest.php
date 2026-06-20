@@ -47,4 +47,15 @@ class CostBreakdownDecimalTest extends TestCase
         $this->assertSame('0.00000000', CostBreakdown::decimal(0.0));
         $this->assertSame(CostBreakdown::SCALE, 8);
     }
+
+    public function test_decimal_normalises_negative_zero_to_positive_zero(): void
+    {
+        // A subtraction/rounding artifact can yield -0.0; money must never
+        // serialize as "-0.00000000".
+        $this->assertSame('0.00000000', CostBreakdown::decimal(-0.0));
+        $this->assertSame('0.00000000', CostBreakdown::decimal(-0.000000001)); // rounds to zero
+        $this->assertSame('0.00000000', (new CostBreakdown(total: -0.0))->totalDecimal());
+        // A genuinely-negative remaining budget keeps its sign.
+        $this->assertSame('-5.00000000', CostBreakdown::decimal(-5.0));
+    }
 }
