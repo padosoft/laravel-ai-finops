@@ -5,7 +5,6 @@
   "src": "docs",
   "out": "_site",
   "base": "/",
-  "favicon": "/assets/favicon.svg",
   "engine": "js",
   "layout": {
     "spa": true,
@@ -34,15 +33,27 @@
         {
           "title": "Project",
           "links": [
-            { "label": "GitHub", "href": "https://github.com/padosoft/laravel-ai-finops" },
-            { "label": "Issues", "href": "https://github.com/padosoft/laravel-ai-finops/issues" }
+            {
+              "label": "GitHub",
+              "href": "https://github.com/padosoft/laravel-ai-finops"
+            },
+            {
+              "label": "Issues",
+              "href": "https://github.com/padosoft/laravel-ai-finops/issues"
+            }
           ]
         },
         {
           "title": "Package",
           "links": [
-            { "label": "Packagist", "href": "https://packagist.org/packages/padosoft/laravel-ai-finops" },
-            { "label": "Docs", "href": "https://doc.laravel-ai-finops.padosoft.com" }
+            {
+              "label": "Packagist",
+              "href": "https://packagist.org/packages/padosoft/laravel-ai-finops"
+            },
+            {
+              "label": "Docs",
+              "href": "https://doc.laravel-ai-finops.padosoft.com"
+            }
           ]
         }
       ]
@@ -52,81 +63,191 @@
     "name": "default",
     "appearance": "system",
     "codeHighlight": true,
-    "customCss": ["/assets/custom.css"],
-    "primaryColor": "#0d9488"
+    "primaryColor": "#0d9488",
+    "customCss": [
+      "assets/custom.css"
+    ]
   },
   "copyCode": true,
   "pageNavigation": true,
   "minify": true,
   "autoTitleFromH1": true,
   "navigation": [
-    { "title": "Overview", "path": "/", "icon": "layout-dashboard" },
+    {
+      "title": "Overview",
+      "path": "/",
+      "icon": "layout-dashboard"
+    },
     {
       "title": "Get Started",
       "icon": "rocket",
       "children": [
-        { "title": "Quickstart", "path": "/get-started/quickstart", "icon": "zap" },
-        { "title": "Installation", "path": "/get-started/installation", "icon": "download" },
-        { "title": "Configuration", "path": "/get-started/configuration", "icon": "settings" }
+        {
+          "title": "Quickstart",
+          "path": "/get-started/quickstart",
+          "icon": "zap"
+        },
+        {
+          "title": "Installation",
+          "path": "/get-started/installation",
+          "icon": "download"
+        },
+        {
+          "title": "Configuration",
+          "path": "/get-started/configuration",
+          "icon": "settings"
+        }
       ]
     },
     {
       "title": "Guides",
       "icon": "book-open",
       "children": [
-        { "title": "Metering", "path": "/guides/metering", "icon": "activity" },
-        { "title": "Budgets & Policies", "path": "/guides/budgets-policies", "icon": "shield-check" },
-        { "title": "Pricing & Coverage", "path": "/guides/pricing-coverage", "icon": "coins" },
-        { "title": "Chargeback & Forecast", "path": "/guides/chargeback-forecast", "icon": "chart-line" },
-        { "title": "Worked Example", "path": "/guides/worked-example", "icon": "play-circle" }
+        {
+          "title": "Metering",
+          "path": "/guides/metering",
+          "icon": "activity"
+        },
+        {
+          "title": "Budgets & Policies",
+          "path": "/guides/budgets-policies",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Pricing & Coverage",
+          "path": "/guides/pricing-coverage",
+          "icon": "coins"
+        },
+        {
+          "title": "Chargeback & Forecast",
+          "path": "/guides/chargeback-forecast",
+          "icon": "chart-line"
+        },
+        {
+          "title": "Worked Example",
+          "path": "/guides/worked-example",
+          "icon": "play-circle"
+        }
       ]
     },
     {
       "title": "Concetti & Teoria",
       "icon": "brain",
       "children": [
-        { "title": "Motivazione", "path": "/concepts/motivazione", "icon": "target" },
-        { "title": "Teoria FinOps AI", "path": "/concepts/teoria", "icon": "sigma" },
-        { "title": "Cost Cascade", "path": "/concepts/cost-cascade", "icon": "route" }
+        {
+          "title": "Motivazione",
+          "path": "/concepts/motivazione",
+          "icon": "target"
+        },
+        {
+          "title": "Teoria FinOps AI",
+          "path": "/concepts/teoria",
+          "icon": "sigma"
+        },
+        {
+          "title": "Cost Cascade",
+          "path": "/concepts/cost-cascade",
+          "icon": "route"
+        }
       ]
     },
     {
       "title": "Architettura",
       "icon": "network",
       "children": [
-        { "title": "Overview", "path": "/architecture/overview", "icon": "boxes" },
-        { "title": "Pipeline & Workflow", "path": "/architecture/pipeline-workflow", "icon": "workflow" },
-        { "title": "Design", "path": "/architecture/design", "icon": "git-branch" },
-        { "title": "Modello dati/contratto", "path": "/architecture/data-contract", "icon": "database" },
-        { "title": "ADR", "path": "/architecture/adr", "icon": "file-check" }
+        {
+          "title": "Overview",
+          "path": "/architecture/overview",
+          "icon": "boxes"
+        },
+        {
+          "title": "Pipeline & Workflow",
+          "path": "/architecture/pipeline-workflow",
+          "icon": "workflow"
+        },
+        {
+          "title": "Design",
+          "path": "/architecture/design",
+          "icon": "git-branch"
+        },
+        {
+          "title": "Modello dati/contratto",
+          "path": "/architecture/data-contract",
+          "icon": "database"
+        },
+        {
+          "title": "ADR",
+          "path": "/architecture/adr",
+          "icon": "file-check"
+        }
       ]
     },
     {
       "title": "Best Practices",
       "icon": "badge-check",
       "children": [
-        { "title": "Governance", "path": "/best-practices/governance", "icon": "scale" },
-        { "title": "Security & Privacy", "path": "/best-practices/security-privacy", "icon": "lock" },
-        { "title": "Limits & Gotchas", "path": "/best-practices/limits-gotchas", "icon": "triangle-alert" }
+        {
+          "title": "Governance",
+          "path": "/best-practices/governance",
+          "icon": "scale"
+        },
+        {
+          "title": "Security & Privacy",
+          "path": "/best-practices/security-privacy",
+          "icon": "lock"
+        },
+        {
+          "title": "Limits & Gotchas",
+          "path": "/best-practices/limits-gotchas",
+          "icon": "triangle-alert"
+        }
       ]
     },
     {
       "title": "Operations",
       "icon": "terminal",
       "children": [
-        { "title": "Runbook", "path": "/operations/runbook", "icon": "clipboard-list" },
-        { "title": "Alerts", "path": "/operations/alerts", "icon": "bell" },
-        { "title": "Pricing Sync", "path": "/operations/pricing-sync", "icon": "refresh-cw" }
+        {
+          "title": "Runbook",
+          "path": "/operations/runbook",
+          "icon": "clipboard-list"
+        },
+        {
+          "title": "Alerts",
+          "path": "/operations/alerts",
+          "icon": "bell"
+        },
+        {
+          "title": "Pricing Sync",
+          "path": "/operations/pricing-sync",
+          "icon": "refresh-cw"
+        }
       ]
     },
     {
       "title": "Reference",
       "icon": "braces",
       "children": [
-        { "title": "CLI", "path": "/reference/cli", "icon": "terminal-square" },
-        { "title": "API", "path": "/reference/api", "icon": "plug" },
-        { "title": "PHP API", "path": "/reference/php-api", "icon": "code-2" },
-        { "title": "Configuration Reference", "path": "/reference/configuration", "icon": "sliders-horizontal" }
+        {
+          "title": "CLI",
+          "path": "/reference/cli",
+          "icon": "terminal-square"
+        },
+        {
+          "title": "API",
+          "path": "/reference/api",
+          "icon": "plug"
+        },
+        {
+          "title": "PHP API",
+          "path": "/reference/php-api",
+          "icon": "code-2"
+        },
+        {
+          "title": "Configuration Reference",
+          "path": "/reference/configuration",
+          "icon": "sliders-horizontal"
+        }
       ]
     }
   ],
@@ -134,8 +255,12 @@
     "search": {
       "semantic": true,
       "model": "Xenova/all-MiniLM-L6-v2",
-      "include": ["**/*.md"],
-      "exclude": ["**/drafts/**"],
+      "include": [
+        "**/*.md"
+      ],
+      "exclude": [
+        "**/drafts/**"
+      ],
       "showConfidence": true,
       "showFilters": true
     },
@@ -164,5 +289,6 @@
     "math": {},
     "llms": {},
     "analytics": false
-  }
+  },
+  "favicon": "assets/favicon.svg"
 }
