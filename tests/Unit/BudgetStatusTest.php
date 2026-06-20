@@ -23,6 +23,25 @@ class BudgetStatusTest extends TestCase
         $this->assertSame(25.0, $s->percent());
     }
 
+    public function test_fixed_precision_decimal_strings(): void
+    {
+        $s = $this->makeStatus(100.0, 25.5);
+
+        // v1.3 — money exposed as fixed-precision 8-dp decimal STRINGS.
+        $this->assertSame('100.00000000', $s->limitDecimal());
+        $this->assertSame('25.50000000', $s->spentDecimal());
+        $this->assertSame('74.50000000', $s->remainingDecimal());
+
+        $arr = $s->toArray();
+        // Additive: the decimal keys are strings; the float keys are kept.
+        $this->assertSame('100.00000000', $arr['limit_decimal']);
+        $this->assertSame('25.50000000', $arr['spent_decimal']);
+        $this->assertSame('74.50000000', $arr['remaining_decimal']);
+        $this->assertIsString($arr['limit_decimal']);
+        $this->assertSame(100.0, $arr['limit']); // back-compat float kept
+        $this->assertIsFloat($arr['percent']);    // ratio stays a float
+    }
+
     public function test_state_transitions(): void
     {
         $this->assertSame('ok', $this->makeStatus(100, 10)->state(80));
