@@ -22,24 +22,29 @@ class TraceContext
 
     private string|int|null $tenantId = null;
 
+    private ?string $delegationGrantId = null;
+
     public function set(
         ?string $traceId = null,
         ?string $agentStep = null,
         ?string $costCenter = null,
         ?string $purposeTag = null,
         string|int|null $tenantId = null,
+        ?string $delegationGrantId = null,
     ): void {
         $this->traceId = $traceId ?? $this->traceId;
         $this->agentStep = $agentStep ?? $this->agentStep;
         $this->costCenter = $costCenter ?? $this->costCenter;
         $this->purposeTag = $purposeTag ?? $this->purposeTag;
         $this->tenantId = $tenantId ?? $this->tenantId;
+        $this->delegationGrantId = $delegationGrantId ?? $this->delegationGrantId;
     }
 
     public function clear(): void
     {
         $this->traceId = $this->agentStep = $this->costCenter = $this->purposeTag = null;
         $this->tenantId = null;
+        $this->delegationGrantId = null;
     }
 
     /**
@@ -52,7 +57,7 @@ class TraceContext
      */
     public function within(array $context, callable $callback): mixed
     {
-        $previous = [$this->traceId, $this->agentStep, $this->costCenter, $this->purposeTag, $this->tenantId];
+        $previous = [$this->traceId, $this->agentStep, $this->costCenter, $this->purposeTag, $this->tenantId, $this->delegationGrantId];
 
         $this->set(
             traceId: $context['trace_id'] ?? null,
@@ -60,12 +65,13 @@ class TraceContext
             costCenter: $context['cost_center'] ?? null,
             purposeTag: $context['purpose_tag'] ?? null,
             tenantId: $context['tenant_id'] ?? null,
+            delegationGrantId: $context['delegation_grant_id'] ?? null,
         );
 
         try {
             return $callback();
         } finally {
-            [$this->traceId, $this->agentStep, $this->costCenter, $this->purposeTag, $this->tenantId] = $previous;
+            [$this->traceId, $this->agentStep, $this->costCenter, $this->purposeTag, $this->tenantId, $this->delegationGrantId] = $previous;
         }
     }
 
@@ -92,5 +98,10 @@ class TraceContext
     public function tenantId(): string|int|null
     {
         return $this->tenantId;
+    }
+
+    public function delegationGrantId(): ?string
+    {
+        return $this->delegationGrantId;
     }
 }

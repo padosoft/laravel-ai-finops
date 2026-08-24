@@ -12,6 +12,7 @@ use Laravel\Ai\Events\AgentStreamed;
 use Laravel\Ai\Events\EmbeddingsGenerated;
 use Laravel\Ai\Events\GeneratingEmbeddings;
 use Laravel\Ai\Events\PromptingAgent;
+use Padosoft\Iam\Contracts\Delegation\DelegationBudgetGuard;
 use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
 use Padosoft\LaravelAiFinOps\Console\CapturePricesCommand;
 use Padosoft\LaravelAiFinOps\Console\CheckAlertsCommand;
@@ -25,6 +26,7 @@ use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
 use Padosoft\LaravelAiFinOps\Contracts\TokenEstimator;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
+use Padosoft\LaravelAiFinOps\Delegation\LedgerDelegationBudgetGuard;
 use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
@@ -116,6 +118,16 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
             CopilotProvider::class,
             NullCopilotProvider::class,
         );
+
+        // Seam for laravel-iam-agents budget-bounded delegation. Double-gated:
+        // the toggle is an explicit host opt-in AND the contract must exist
+        // (padosoft/laravel-iam-contracts installed). When bound, every RFC 8693
+        // token exchange consults the ledger; a budgeted grant with NO guard bound
+        // is refused by iam-agents itself (fail-closed on their side, not ours).
+        if (interface_exists(DelegationBudgetGuard::class)
+            && (bool) config('ai-finops.integrations.iam_delegation.enabled')) {
+            $this->app->singleton(DelegationBudgetGuard::class, LedgerDelegationBudgetGuard::class);
+        }
     }
 
     public function boot(): void
