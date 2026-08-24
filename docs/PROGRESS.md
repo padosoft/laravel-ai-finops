@@ -139,3 +139,8 @@ continue cleanly after an interruption.
 - Docs: `docs-site/docs/guides/delegation-budgets.md` (+nav, check+build green, 28 pages), README rows
   (Features + Integrations), `release.yml` added (workflow_dispatch tag+release, ecosystem pattern).
 - Gates GREEN: PHPUnit 195/195 (8 new in `DelegationBudgetGuardTest`), Pint passed.
+
+### Delegation read path (branch `task/delegation-read-path`, 2026-08-24) — v1.6.1
+- Admin-parity follow-up (regola fissa #8): `delegation_grant_id` filter on GET usage index
+  (one array element) + `GET dashboard/top-delegations` (topBy pivot: cost/calls/tokens per
+  grant) + route; docs guide updated with the two read paths; 2 new tests. 197/197 green.

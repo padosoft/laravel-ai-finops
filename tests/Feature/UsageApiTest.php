@@ -47,6 +47,21 @@ class UsageApiTest extends TestCase
             ->assertJsonPath('data.0.model', 'claude-haiku-4.5');
     }
 
+    public function test_index_filters_by_delegation_grant(): void
+    {
+        UsageRecord::fromEnvelope(new AiCallEnvelope(
+            traceId: 'td1', provider: 'openai', model: 'gpt-5.1',
+            cost: new CostBreakdown(total: 0.01, currency: 'USD'),
+            delegationGrantId: 'dgr_filter',
+        ))->save();
+        $this->seedRecord('td2', 'openai', 'gpt-5.1', 0.02); // non-delegated
+
+        $this->getJson('/api/ai-finops/usage?delegation_grant_id=dgr_filter')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.delegation_grant_id', 'dgr_filter');
+    }
+
     public function test_show_returns_single_record(): void
     {
         $row = $this->seedRecord('t3', 'openai', 'gpt-5.1', 0.03);

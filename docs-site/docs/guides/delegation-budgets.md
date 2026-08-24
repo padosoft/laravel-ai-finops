@@ -101,3 +101,11 @@ ledger (spend visibility is never lost); it is the *next exchange* that gets ref
 Because the grant binds one user to one agent, `delegation_grant_id` is also the pivot for
 delegated-spend chargeback: group ledger rows by grant to see what each agent spent *on behalf of
 whom*, alongside the existing tenant / cost-center dimensions.
+
+Both read paths are first-class API (and surfaced in
+[laravel-ai-finops-admin](https://github.com/padosoft/laravel-ai-finops-admin)'s Usage Explorer):
+
+```text
+GET /api/ai-finops/usage?delegation_grant_id=dgr_…   # the grant's ledger rows
+GET /api/ai-finops/dashboard/top-delegations         # spend pivot per grant (cost, calls, tokens)
+```

@@ -62,6 +62,12 @@ class DashboardController
         return response()->json(['data' => $this->topBy('tenant_id', $request)]);
     }
 
+    /** Delegated-agent spend pivot: what each IAM delegation grant consumed (per user↔agent pair). */
+    public function topDelegations(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->topBy('delegation_grant_id', $request)]);
+    }
+
     /** @return Collection<int,object> */
     private function topBy(string $column, Request $request): Collection
     {
