@@ -254,5 +254,10 @@ return [
         'pii_redactor' => ['enabled' => false],
         'price_intelligence' => ['enabled' => false],
         'flow' => ['enabled' => false], // trace-id propagation for per-step cost
+        // Budget-bounded delegation (laravel-iam-agents): bind the ledger-backed
+        // DelegationBudgetGuard so IAM refuses token exchanges once a delegation
+        // grant's budget (amount/tokens/calls) is exhausted. Requires
+        // padosoft/laravel-iam-contracts (dev-suggested).
+        'iam_delegation' => ['enabled' => false],
     ],
 ];

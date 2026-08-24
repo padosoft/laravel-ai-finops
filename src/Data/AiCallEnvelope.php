@@ -44,6 +44,9 @@ final readonly class AiCallEnvelope
         public bool $tokensEstimated = false,
         public ?float $billedCost = null,
         public ?string $billedCurrency = null,
+        // IAM delegation attribution (trailing for positional BC): the call ran under
+        // a delegated token — the id is the `pds_dgr` claim / iam_delegation_grants id.
+        public ?string $delegationGrantId = null,
     ) {}
 
     public function withStatus(CallStatus $status): self
@@ -106,6 +109,7 @@ final readonly class AiCallEnvelope
             'tokens_estimated' => $this->tokensEstimated,
             'billed_cost' => $this->billedCost,
             'billed_currency' => $this->billedCurrency,
+            'delegation_grant_id' => $this->delegationGrantId,
             // Returned as a raw array; the UsageRecord model's `array` cast encodes
             // it on write (encoding here too would double-encode the JSON).
             'metadata' => $this->metadata === [] ? null : $this->metadata,
@@ -147,6 +151,7 @@ final readonly class AiCallEnvelope
             tokensEstimated: (bool) ($data['tokens_estimated'] ?? false),
             billedCost: isset($data['billed_cost']) ? (float) $data['billed_cost'] : null,
             billedCurrency: $data['billed_currency'] ?? null,
+            delegationGrantId: $data['delegation_grant_id'] ?? null,
         );
     }
 
@@ -175,6 +180,7 @@ final readonly class AiCallEnvelope
             tokensEstimated: $overrides['tokensEstimated'] ?? $this->tokensEstimated,
             billedCost: $overrides['billedCost'] ?? $this->billedCost,
             billedCurrency: $overrides['billedCurrency'] ?? $this->billedCurrency,
+            delegationGrantId: $overrides['delegationGrantId'] ?? $this->delegationGrantId,
         );
     }
 

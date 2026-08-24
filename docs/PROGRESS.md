@@ -127,3 +127,15 @@ continue cleanly after an interruption.
 
 > Plan: `docs/PLAN.md` (repo-relative; author's local copy under `~/.claude/plans/` or
 > `%USERPROFILE%\.claude\plans\`). Macro tasks M0–M7 tracked in the session task list.
+
+### Delegation budget meter (branch `task/delegation-budget-meter`, 2026-08-24) — v1.6.0
+- IAM budget-bounded delegation (laravel-iam-agents v1.1): `src/Delegation/LedgerDelegationBudgetGuard`
+  implements `Padosoft\Iam\Contracts\Delegation\DelegationBudgetGuard` (iam-contracts ^1.4, require-dev
+  + suggest) summing the ledger by the new indexed `delegation_grant_id` column.
+- `AiCallEnvelope` gained trailing `delegationGrantId` (positional-BC guarded by test); `TraceContext`
+  gained the `delegation_grant_id` slot (ambient stamping via `MeteringListener`).
+- Binding double-gated: `integrations.iam_delegation.enabled` (default false) AND `interface_exists`.
+  Amount cap converted ledger-base→budget currency via `FxConverter`.
+- Docs: `docs-site/docs/guides/delegation-budgets.md` (+nav, check+build green, 28 pages), README rows
+  (Features + Integrations), `release.yml` added (workflow_dispatch tag+release, ecosystem pattern).
+- Gates GREEN: PHPUnit 195/195 (8 new in `DelegationBudgetGuardTest`), Pint passed.

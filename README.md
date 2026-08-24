@@ -147,6 +147,7 @@ tags so FinOps attributes and governs spend consistently.
 | Subscriptions | Flat‑rate coverage windows → covered calls cost €0 (tokens tracked); per‑provider overhead % for estimates |
 | Cost accuracy | Cascade: **actual billed cost** (recovered from the provider response that laravel/ai drops) → **actual tokens × tariff** → **estimated tokens × tariff**; per‑call `cost_method` + `tokens_estimated` + `billed_cost`. Token estimator (heuristic; exact via optional `yethee/tiktoken`). fal.ai priced per second/image/megapixel |
 | Budgets | N‑scope hierarchy × periods; soft/hard; burndown; in‑flight enforcement |
+| Delegation budgets | The meter behind [laravel-iam-agents](https://github.com/padosoft/laravel-iam-agents) budget-bounded delegated access: ledger-backed `DelegationBudgetGuard` — IAM refuses the agent's next token exchange when a delegation grant's caps (amount/tokens/calls) are consumed |
 | Policies | DSL (scope + min‑cost + model) → block/approval/downgrade/throttle/queue; simulate |
 | Approvals | Pending → approve/reject workflow |
 | Kill switch | Global + per provider/tenant; config or stored |
@@ -233,6 +234,7 @@ No hard dependency on sibling packages — bind an adapter to enable each:
 | `QualityScoreProvider` | cost‑aware routing | `padosoft/eval-harness` |
 | `GuardrailProvider` | guardrail‑linked spend | `laravel-pii-redactor` / `laravel-ai-act-compliance` |
 | `CopilotProvider` | NL FinOps copilot | `laravel-ai-chat` / `AskMyDocs` |
+| `DelegationBudgetGuard` (from `padosoft/laravel-iam-contracts`) | budget‑bounded delegated access for AI agents — auto‑bound when `integrations.iam_delegation.enabled` is on | `laravel-iam-agents` — [guide](https://doc.laravel-ai-finops.padosoft.com/guides/delegation-budgets) |
 
 ```php
 $this->app->singleton(\Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider::class, MyEvalHarnessScores::class);

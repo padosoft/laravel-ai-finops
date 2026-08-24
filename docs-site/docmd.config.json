@@ -114,6 +114,11 @@
           "icon": "shield-check"
         },
         {
+          "title": "Delegation Budgets (IAM)",
+          "path": "/guides/delegation-budgets",
+          "icon": "key-round"
+        },
+        {
           "title": "Pricing & Coverage",
           "path": "/guides/pricing-coverage",
           "icon": "coins"

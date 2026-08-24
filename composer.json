@@ -42,13 +42,15 @@
     },
     "require-dev": {
         "laravel/ai": "^0.6.8 || ^0.7",
-        "orchestra/testbench": "^10.0 || ^11.0",
-        "phpunit/phpunit": "^11.0 || ^12.0",
         "laravel/pint": "^1.18",
-        "mockery/mockery": "^1.6"
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "padosoft/laravel-iam-contracts": "^1.4",
+        "phpunit/phpunit": "^11.0 || ^12.0"
     },
     "suggest": {
         "laravel/ai": "Required to meter real AI calls via the laravel/ai request/response lifecycle (^0.6.8 || ^0.7).",
+        "padosoft/laravel-iam-contracts": "Enables the delegated-budget guard: bind LedgerDelegationBudgetGuard so IAM token exchanges are refused when a delegation grant budget is exhausted (^1.4).",
         "yethee/tiktoken": "Exact token counting for OpenAI / OpenAI-compatible models (FinOps cost-estimation case c); a heuristic estimator is used when absent."
     },
     "autoload": {

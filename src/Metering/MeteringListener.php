@@ -177,6 +177,7 @@ class MeteringListener
             tokensEstimated: $resolution->tokensEstimated,
             billedCost: $billedCost,
             billedCurrency: $billedCurrency,
+            delegationGrantId: $this->trace->delegationGrantId(),
         );
     }
 
