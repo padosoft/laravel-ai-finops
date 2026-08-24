@@ -17,7 +17,7 @@ class UsageController
 
         $query = UsageRecord::query()->latest('id');
 
-        foreach (['provider', 'model', 'status', 'tenant_id', 'cost_center', 'purpose_tag'] as $field) {
+        foreach (['provider', 'model', 'status', 'tenant_id', 'cost_center', 'purpose_tag', 'delegation_grant_id'] as $field) {
             if ($request->filled($field)) {
                 $query->where($field, (string) $request->input($field));
             }

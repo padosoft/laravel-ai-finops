@@ -15,7 +15,7 @@ class DashboardApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function seedRecord(string $provider, string $model, float $cost, ?string $tenant = null): void
+    private function seedRecord(string $provider, string $model, float $cost, ?string $tenant = null, ?string $grantId = null): void
     {
         UsageRecord::fromEnvelope(new AiCallEnvelope(
             traceId: uniqid('t', true),
@@ -24,6 +24,7 @@ class DashboardApiTest extends TestCase
             tokens: new TokenUsage(input: 100, output: 40),
             cost: new CostBreakdown(total: $cost, currency: 'USD'),
             tenantId: $tenant,
+            delegationGrantId: $grantId,
         ))->save();
     }
 
@@ -60,6 +61,21 @@ class DashboardApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.tenant_id', 'acme')
             ->assertJsonCount(1, 'data');
+    }
+
+    public function test_top_delegations_pivots_delegated_spend_per_grant(): void
+    {
+        $this->seedRecord('openai', 'gpt-5.1', 0.30, grantId: 'dgr_busy');
+        $this->seedRecord('openai', 'gpt-5.1', 0.20, grantId: 'dgr_busy');
+        $this->seedRecord('openai', 'gpt-5.1', 0.10, grantId: 'dgr_calm');
+        $this->seedRecord('openai', 'gpt-5.1', 9.99); // non-delegated: excluded
+
+        $this->getJson('/api/ai-finops/dashboard/top-delegations')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.delegation_grant_id', 'dgr_busy')
+            ->assertJsonPath('data.0.calls', 2)
+            ->assertJsonPath('data.1.delegation_grant_id', 'dgr_calm');
     }
 
     public function test_spend_trend_returns_daily_series(): void

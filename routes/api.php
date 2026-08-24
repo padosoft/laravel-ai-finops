@@ -77,6 +77,7 @@ Route::group([
         Route::get('dashboard/spend-trend', [DashboardController::class, 'spendTrend'])->name('ai-finops.dashboard.spend-trend');
         Route::get('dashboard/top-models', [DashboardController::class, 'topModels'])->name('ai-finops.dashboard.top-models');
         Route::get('dashboard/top-tenants', [DashboardController::class, 'topTenants'])->name('ai-finops.dashboard.top-tenants');
+        Route::get('dashboard/top-delegations', [DashboardController::class, 'topDelegations'])->name('ai-finops.dashboard.top-delegations');
 
         // Policies (declarative)
         Route::get('policies', [PolicyController::class, 'index'])->name('ai-finops.policies.index');
