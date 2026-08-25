@@ -38,3 +38,8 @@ sequenceDiagram
 Wrap each agent step in `TraceContext::within()` so one run can be reported as a cost flame graph by `trace_id`.
 :::
 
+## Beyond the run total
+
+Metering records **one priced row per call**. For where inside a run that cost went, how long each
+tool took, what a run that failed had already spent, and which run called which — see
+[Run Observability](/guides/run-observability), which needs `laravel/ai` ^0.11.

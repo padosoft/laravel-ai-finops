@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Padosoft\LaravelAiFinOps;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Ai\Events\AgentFailed;
 use Laravel\Ai\Events\AgentPrompted;
 use Laravel\Ai\Events\AgentStreamed;
 use Laravel\Ai\Events\EmbeddingsGenerated;
 use Laravel\Ai\Events\GeneratingEmbeddings;
 use Laravel\Ai\Events\PromptingAgent;
+use Laravel\Ai\Events\StepCompleted;
+use Laravel\Ai\Events\StepFailed;
+use Laravel\Ai\Events\ToolFailed;
+use Laravel\Ai\Events\ToolInvoked;
 use Padosoft\Iam\Contracts\Delegation\DelegationBudgetGuard;
 use Padosoft\LaravelAiFinOps\Audit\AuditObserver;
 use Padosoft\LaravelAiFinOps\Console\CapturePricesCommand;
@@ -23,13 +29,16 @@ use Padosoft\LaravelAiFinOps\Contracts\CopilotProvider;
 use Padosoft\LaravelAiFinOps\Contracts\GuardrailProvider;
 use Padosoft\LaravelAiFinOps\Contracts\PricingSource;
 use Padosoft\LaravelAiFinOps\Contracts\QualityScoreProvider;
+use Padosoft\LaravelAiFinOps\Contracts\RunEventRecorder;
 use Padosoft\LaravelAiFinOps\Contracts\TokenEstimator;
 use Padosoft\LaravelAiFinOps\Contracts\UsageRecorder;
 use Padosoft\LaravelAiFinOps\Copilot\NullCopilotProvider;
 use Padosoft\LaravelAiFinOps\Delegation\LedgerDelegationBudgetGuard;
 use Padosoft\LaravelAiFinOps\Guardrails\NullGuardrailProvider;
+use Padosoft\LaravelAiFinOps\Ledger\DatabaseRunEventRecorder;
 use Padosoft\LaravelAiFinOps\Ledger\DatabaseUsageRecorder;
 use Padosoft\LaravelAiFinOps\Metering\MeteringListener;
+use Padosoft\LaravelAiFinOps\Metering\RunObserver;
 use Padosoft\LaravelAiFinOps\Models\Budget;
 use Padosoft\LaravelAiFinOps\Models\CostCenter;
 use Padosoft\LaravelAiFinOps\Models\KillSwitch;
@@ -68,6 +77,12 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         // Scoped like TraceContext: per-request/job buffer of captured provider cost.
         $this->app->scoped(RawResponseCapture::class);
         $this->app->singleton(UsageRecorder::class, DatabaseUsageRecorder::class);
+        $this->app->singleton(RunEventRecorder::class, DatabaseRunEventRecorder::class);
+
+        // Singleton, not bound per resolution: the observer keeps the in-flight
+        // usage accumulator that lets a terminal failure be billed for the steps
+        // that already completed. A fresh instance per event would lose it.
+        $this->app->singleton(RunObserver::class);
         // Back-compat: the bare PricingSource binding stays the LiteLLM base.
         $this->app->singleton(PricingSource::class, LiteLLMPricingSource::class);
 
@@ -233,6 +248,36 @@ class LaravelAiFinOpsServiceProvider extends ServiceProvider
         $events->listen(AgentPrompted::class, [MeteringListener::class, 'handleAgentPrompted']);
         $events->listen(AgentStreamed::class, [MeteringListener::class, 'handleAgentPrompted']);
         $events->listen(EmbeddingsGenerated::class, [MeteringListener::class, 'handleEmbeddingsGenerated']);
+
+        $this->bootRunObserver($events);
+    }
+
+    /**
+     * Register the run-shape hook. These events arrived in laravel/ai 0.11, so the
+     * class_exists guard is what lets the package keep metering on 0.7 rather than
+     * fatal on a missing event class.
+     *
+     * @param  Dispatcher  $events
+     */
+    private function bootRunObserver($events): void
+    {
+        if (! config('ai-finops.run_events.enabled', true)) {
+            return;
+        }
+
+        if (! class_exists(StepCompleted::class)) {
+            return;
+        }
+
+        $events->listen(StepCompleted::class, [RunObserver::class, 'handleStepCompleted']);
+        $events->listen(StepFailed::class, [RunObserver::class, 'handleStepFailed']);
+        $events->listen(ToolInvoked::class, [RunObserver::class, 'handleToolInvoked']);
+        $events->listen(ToolFailed::class, [RunObserver::class, 'handleToolFailed']);
+        $events->listen(AgentFailed::class, [RunObserver::class, 'handleAgentFailed']);
+
+        // Releases the in-flight accumulator: a run that succeeded was already
+        // billed as a whole by the metering listener.
+        $events->listen(AgentPrompted::class, [RunObserver::class, 'handleAgentPrompted']);
     }
 
     /**
