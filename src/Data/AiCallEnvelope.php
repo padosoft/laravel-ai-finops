@@ -47,6 +47,11 @@ final readonly class AiCallEnvelope
         // IAM delegation attribution (trailing for positional BC): the call ran under
         // a delegated token — the id is the `pds_dgr` claim / iam_delegation_grants id.
         public ?string $delegationGrantId = null,
+        // laravel/ai's own id for the whole run (0.11+). Distinct from `traceId`,
+        // which an ambient TraceContext may override: this one is the join key to
+        // the run-events table, so a ledger row can always be placed inside the run
+        // it belongs to.
+        public ?string $invocationId = null,
     ) {}
 
     public function withStatus(CallStatus $status): self
@@ -110,6 +115,7 @@ final readonly class AiCallEnvelope
             'billed_cost' => $this->billedCost,
             'billed_currency' => $this->billedCurrency,
             'delegation_grant_id' => $this->delegationGrantId,
+            'invocation_id' => $this->invocationId,
             // Returned as a raw array; the UsageRecord model's `array` cast encodes
             // it on write (encoding here too would double-encode the JSON).
             'metadata' => $this->metadata === [] ? null : $this->metadata,
@@ -152,6 +158,7 @@ final readonly class AiCallEnvelope
             billedCost: isset($data['billed_cost']) ? (float) $data['billed_cost'] : null,
             billedCurrency: $data['billed_currency'] ?? null,
             delegationGrantId: $data['delegation_grant_id'] ?? null,
+            invocationId: $data['invocation_id'] ?? null,
         );
     }
 
@@ -181,6 +188,7 @@ final readonly class AiCallEnvelope
             billedCost: $overrides['billedCost'] ?? $this->billedCost,
             billedCurrency: $overrides['billedCurrency'] ?? $this->billedCurrency,
             delegationGrantId: $overrides['delegationGrantId'] ?? $this->delegationGrantId,
+            invocationId: $overrides['invocationId'] ?? $this->invocationId,
         );
     }
 

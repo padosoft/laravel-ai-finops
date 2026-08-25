@@ -109,6 +109,11 @@
           "icon": "activity"
         },
         {
+          "title": "Run Observability",
+          "path": "/guides/run-observability",
+          "icon": "git-branch"
+        },
+        {
           "title": "Budgets & Policies",
           "path": "/guides/budgets-policies",
           "icon": "shield-check"

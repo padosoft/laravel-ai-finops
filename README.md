@@ -133,6 +133,11 @@ cost, currency, tenant, cost‑center, agent step, purpose, `trace‑id`). It fl
    `tokens_estimated`, `billed_cost`, and frozen price provenance (source, exact rates, upstream
    provider) → budgets, forecasts and alerts update.
 
+3. **Run shape** *(needs `laravel/ai` ^0.11)* — alongside the one row that prices the run, each
+   generation **step** and each **tool** invocation is recorded with its usage, its wall time and,
+   when it threw, its exception. A run delegated from another agent's tool records the invocation and
+   the tool call it came from, so the chain can be walked in either direction.
+
 The envelope is also the **cross‑package contract**: any Padosoft package can populate its context
 tags so FinOps attributes and governs spend consistently.
 
@@ -143,6 +148,8 @@ tags so FinOps attributes and governs spend consistently.
 | Area | What you get |
 |------|--------------|
 | Metering | Single `laravel/ai` hook; immutable usage ledger; multimodal token tracking |
+| **Run shape** *(new)* | Per‑step cost, per‑tool wall time and the **who‑called‑whom chain** of agents invoked as tools — from the run events `laravel/ai` 0.11 emits. A five‑step run stops being one number |
+| **Failed‑run spend** *(new)* | A run that dies mid‑way never emits `AgentPrompted`, so every token it burned was invisible. Steps are accumulated and billed once, when the failure is terminal |
 | Pricing | Multi‑source: LiteLLM ⊕ OpenRouter (live) ⊕ manual (regolo, EUR/per‑1M); per‑provider authority map → freshest‑sync → env tie‑break; overrides win; cache/discount aware |
 | Subscriptions | Flat‑rate coverage windows → covered calls cost €0 (tokens tracked); per‑provider overhead % for estimates |
 | Cost accuracy | Cascade: **actual billed cost** (recovered from the provider response that laravel/ai drops) → **actual tokens × tariff** → **estimated tokens × tariff**; per‑call `cost_method` + `tokens_estimated` + `billed_cost`. Token estimator (heuristic; exact via optional `yethee/tiktoken`). fal.ai priced per second/image/megapixel |
@@ -190,7 +197,7 @@ URL path `/api/ai-finops`). The public `health` probe is open; every other endpo
 `auth_middleware`.
 
 `usage` (rows carry `cost_method` · `tokens_estimated` · `billed_cost`) · `usage/{id}` ·
-`usage/{traceId}/trace` · `diagnostics/estimate` (token counts **or** a `prompt`/`messages` to estimate) ·
+`usage/{traceId}/trace` · `runs` (one row per invocation: steps, tools, failures, cost) · `runs/{invocationId}` (steps, tools, ledger rows, parent run and the runs it delegated to) · `diagnostics/estimate` (token counts **or** a `prompt`/`messages` to estimate) ·
 `pricing/models` (`?source=`) ·
 `pricing/sync` · `pricing/sync/status` (per‑source + `has_openrouter_key`) · `pricing/overrides` ·
 `pricing/subscription-windows` (flat‑rate €0 canoni) · `budgets/*` · `policies/*` ·

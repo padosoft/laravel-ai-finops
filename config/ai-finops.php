@@ -151,6 +151,27 @@ return [
     | Storage / retention
     |--------------------------------------------------------------------------
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Run events (laravel/ai 0.11+)
+    |--------------------------------------------------------------------------
+    |
+    | Per-step and per-tool observability of an agent run: where the cost went,
+    | what a failed run had already spent, and which tool is slow or throwing.
+    | Needs laravel/ai ^0.11 — on older versions the listener is simply never
+    | registered and the rest of the package is unaffected.
+    |
+    */
+
+    'run_events' => [
+        'enabled' => env('AI_FINOPS_RUN_EVENTS', true),
+
+        // Exception messages are provider text and can quote the prompt back at
+        // you, so capture is opt-out and what is stored is bounded.
+        'capture_error_messages' => env('AI_FINOPS_RUN_EVENT_ERROR_MESSAGES', true),
+        'error_message_limit' => env('AI_FINOPS_RUN_EVENT_ERROR_LIMIT', 500),
+    ],
+
     'storage' => [
         'connection' => env('AI_FINOPS_DB_CONNECTION', null),
         'table_prefix' => 'ai_finops_',

@@ -17,6 +17,7 @@ use Padosoft\LaravelAiFinOps\Http\Controllers\PolicyController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PriceWatchController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\PricingController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\RoutingController;
+use Padosoft\LaravelAiFinOps\Http\Controllers\RunController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SettingsController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\SubscriptionWindowController;
 use Padosoft\LaravelAiFinOps\Http\Controllers\UsageController;
@@ -47,6 +48,11 @@ Route::group([
         Route::get('usage', [UsageController::class, 'index'])->name('ai-finops.usage.index');
         Route::get('usage/{id}', [UsageController::class, 'show'])->whereNumber('id')->name('ai-finops.usage.show');
         Route::get('usage/{traceId}/trace', [UsageController::class, 'trace'])->name('ai-finops.usage.trace');
+
+        // Run shape (laravel/ai 0.11+): steps, tools, failures and the
+        // who-called-whom chain of agents invoked as tools.
+        Route::get('runs', [RunController::class, 'index'])->name('ai-finops.runs.index');
+        Route::get('runs/{invocationId}', [RunController::class, 'show'])->name('ai-finops.runs.show');
 
         // Pricing
         Route::get('pricing/models', [PricingController::class, 'models'])->name('ai-finops.pricing.models');

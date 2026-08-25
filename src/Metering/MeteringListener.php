@@ -69,6 +69,41 @@ class MeteringListener
         $this->recorder->record($envelope);
     }
 
+    /**
+     * Bill a run that died before it could produce a response.
+     *
+     * A run that fails part-way never dispatches AgentPrompted, so until laravel/ai
+     * 0.11 gave us AgentFailed every token it had already burned was invisible to
+     * the ledger: the spend was real, the row was missing, and the month's total
+     * was quietly short. {@see RunObserver} accumulates each completed step and
+     * calls this once, when the failure is terminal.
+     */
+    public function recordFailedRun(
+        string $invocationId,
+        string $provider,
+        string $model,
+        TokenUsage $tokens,
+        \Throwable $exception,
+        int $completedSteps,
+    ): void {
+        $envelope = $this->baseEnvelope(
+            traceId: $invocationId,
+            provider: $provider,
+            model: $model,
+            modality: Modality::Text,
+            tokens: $tokens,
+            callMetadata: [
+                'failed' => true,
+                'error_class' => $exception::class,
+                'completed_steps' => $completedSteps,
+            ],
+        );
+
+        // The envelope is priced as any other call — the tokens were charged for.
+        // Only the status says this run never delivered anything.
+        $this->recorder->record($envelope->withStatus(CallStatus::Failed));
+    }
+
     public function recordEmbeddings(string $invocationId, EmbeddingsResponse $response, string $fallbackModel): void
     {
         $envelope = $this->baseEnvelope(
@@ -178,6 +213,9 @@ class MeteringListener
             billedCost: $billedCost,
             billedCurrency: $billedCurrency,
             delegationGrantId: $this->trace->delegationGrantId(),
+            // Keep laravel/ai's own id even when an ambient trace overrides trace_id
+            // above: it is the join key to the run events table.
+            invocationId: $traceId,
         );
     }
 
